@@ -9,7 +9,7 @@ interface Props {
 		transmission: string;
 		fuel: string;
 		seats: number;
-        image: any; // Import path
+        image?: any; // Optional property
 	};
 }
 
@@ -17,9 +17,11 @@ const { data } = Astro.props;
 ---
 
 <article class="spec-plate">
-    <div class="image-container">
-        <Image src={data.image} alt={data.model} width="300" height="200" />
-    </div>
+    {data.image && (
+        <div class="image-container">
+            <Image src={data.image} alt={data.model} width="300" height="200" />
+        </div>
+    )}
 	<h3>{data.make} {data.model}</h3>
 	<ul class="spec-list">
 		<li><strong>ENGINE:</strong> {data.engine}</li>
@@ -28,6 +30,7 @@ const { data } = Astro.props;
 		<li><strong>SEATS:</strong> {data.seats}</li>
 	</ul>
 </article>
+...
 
 <style>
 	.spec-plate {

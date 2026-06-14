@@ -7,6 +7,7 @@ heroImage: "../../assets/blog-placeholder-1.jpg"
 
 import VehicleSpecCard from '../../components/VehicleSpecCard.astro';
 import ComparisonTable from '../../components/ComparisonTable.astro';
+import heroImage from '../../assets/hero-hero.jpg';
 
 The Toyota Avanza has long been the backbone of Filipino transport. Today, we're looking at the 2018 model to see if it remains a practical choice.
 
@@ -17,9 +18,11 @@ The Toyota Avanza has long been the backbone of Filipino transport. Today, we're
     engine: "1.5L Dual VVT-i",
     transmission: "4-Speed AT",
     fuel: "Gasoline",
-    seats: 7
+    seats: 7,
+    image: heroImage
   }} 
 />
+...
 
 ### Why the 2018 Avanza Matters
 The 2018 model sits at a sweet spot for budget-conscious buyers. It offers proven reliability, ample cabin space, and the ease of Toyota parts availability.
