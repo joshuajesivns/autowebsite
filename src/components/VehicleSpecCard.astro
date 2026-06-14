@@ -35,42 +35,43 @@ const { data } = Astro.props;
 <style>
 	.spec-plate {
 		border: 2px solid var(--text-color);
-		padding: 1.5em;
+		padding: 1em; /* Reduced padding */
 		background: #FFF;
 		border-radius: 0;
         display: flex;
         flex-direction: column;
-        height: 100%; /* Ensure card fills grid cell */
+        height: 100%;
 	}
     .image-container {
-        margin-bottom: 1em;
+        margin-bottom: 0.75em;
         overflow: hidden;
     }
     .image-container img {
         width: 100%;
-        height: 180px; /* Uniform height */
-        object-fit: cover; /* Ensures image fills space without stretching */
+        height: 150px; /* Reduced height */
+        object-fit: cover;
     }
 	h3 {
-		margin: 0 0 1em 0;
-		font-size: 1.5em;
+		margin: 0 0 0.75em 0;
+		font-size: 1.2em; /* Smaller title */
 		text-transform: uppercase;
 		border-bottom: 2px solid var(--text-color);
-		padding-bottom: 0.5em;
-        min-height: 2.5em; /* Ensure uniform title height */
+		padding-bottom: 0.25em;
+        min-height: 2em;
 	}
 	.spec-list {
 		list-style: none;
 		padding: 0;
 		margin: 0;
-        margin-top: auto; /* Push specs to bottom */
+        margin-top: auto;
 	}
 	.spec-list li {
-		margin-bottom: 0.5em;
+		margin-bottom: 0.25em;
 		font-family: monospace;
+        font-size: 0.9em; /* Smaller data */
 	}
 	.spec-list strong {
 		color: #666;
-		margin-right: 0.5em;
+		margin-right: 0.25em;
 	}
 </style>
