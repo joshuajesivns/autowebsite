@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Page.astro';
+---
+
+<Layout
+	title="Contact SouthShift"
+	description="Get in touch for inquiries, listing support, or automotive advice."
+>
+	<h2>Contact Us</h2>
+	<p>
+		For serious inquiries about listings, import procedures, or technical advice, please reach out via the channels below. We prioritize verified, high-intent communication.
+	</p>
+
+    <form class="contact-form">
+        <label for="name">Name</label>
+        <input type="text" id="name" name="name" required />
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required />
+
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="5" required></textarea>
+
+        <button type="submit">Send Inquiry</button>
+    </form>
+</Layout>
+
+<style>
+    .contact-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1em;
+        max-width: 500px;
+        margin-top: 2em;
+    }
+    label { font-weight: 700; }
+    input, textarea {
+        padding: 0.5em;
+        border: 2px solid var(--text-color);
+        border-radius: 0;
+    }
+</style>

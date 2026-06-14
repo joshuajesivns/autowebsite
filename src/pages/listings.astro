@@ -1,0 +1,44 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import VehicleSpecCard from '../components/VehicleSpecCard.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+// Mock data until we have a real content collection
+const listings = [
+    { make: "Toyota", model: "AE86 Trueno", engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4 },
+    { make: "Nissan", model: "Skyline GT-R", engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4 },
+    { make: "Mitsubishi", model: "Lancer Evo VI", engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5 },
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Listings | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section>
+				<h1>Inventory</h1>
+                <div class="grid">
+                    {listings.map(item => (
+                        <VehicleSpecCard data={item} />
+                    ))}
+                </div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2em;
+        margin-top: 2em;
+    }
+</style>

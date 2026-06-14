@@ -1,0 +1,23 @@
+---
+interface Props {
+	columns: string[];
+	rows: any[][];
+}
+
+const { columns, rows } = Astro.props;
+---
+
+<table>
+	<thead>
+		<tr>
+			{columns.map((col) => <th>{col}</th>)}
+		</tr>
+	</thead>
+	<tbody>
+		{rows.map((row) => (
+			<tr>
+				{row.map((cell) => <td>{cell}</td>)}
+			</tr>
+		))}
+	</tbody>
+</table>

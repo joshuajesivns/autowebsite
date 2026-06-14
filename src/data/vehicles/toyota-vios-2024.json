@@ -1,0 +1,13 @@
+{
+  "make": "Toyota",
+  "model": "Vios",
+  "year": 2024,
+  "bodyType": "Sedan",
+  "fuel": "Gasoline",
+  "engine": "1.3L Dual VVT-i",
+  "transmission": "MT",
+  "seats": 5,
+  "price_base": 732000,
+  "fuel_economy": "16.5 km/L",
+  "description": "The Vios remains the most reliable entry-level sedan in the Philippines, perfect for new drivers and families alike."
+}

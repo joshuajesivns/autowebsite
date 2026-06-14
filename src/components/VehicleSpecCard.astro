@@ -1,0 +1,53 @@
+---
+interface Props {
+	data: {
+		make: string;
+		model: string;
+		engine: string;
+		transmission: string;
+		fuel: string;
+		seats: number;
+	};
+}
+
+const { data } = Astro.props;
+---
+
+<article class="spec-plate">
+	<h3>{data.make} {data.model}</h3>
+	<ul class="spec-list">
+		<li><strong>ENGINE:</strong> {data.engine}</li>
+		<li><strong>TRANS:</strong> {data.transmission}</li>
+		<li><strong>FUEL:</strong> {data.fuel}</li>
+		<li><strong>SEATS:</strong> {data.seats}</li>
+	</ul>
+</article>
+
+<style>
+	.spec-plate {
+		border: 2px solid var(--text-color);
+		padding: 1.5em;
+		background: #FFF;
+		border-radius: 0;
+	}
+	h3 {
+		margin: 0 0 1em 0;
+		font-size: 1.5em;
+		text-transform: uppercase;
+		border-bottom: 2px solid var(--text-color);
+		padding-bottom: 0.5em;
+	}
+	.spec-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.spec-list li {
+		margin-bottom: 0.5em;
+		font-family: monospace;
+	}
+	.spec-list strong {
+		color: #666;
+		margin-right: 0.5em;
+	}
+</style>

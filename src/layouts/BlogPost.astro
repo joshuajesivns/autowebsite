@@ -1,0 +1,101 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+import '../styles/global.css';
+
+type Props = CollectionEntry<'blog'>['data'];
+
+const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+---
+
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={description} />
+		<style>
+			.layout-container {
+				display: grid;
+				grid-template-columns: 200px 1fr;
+				gap: 2em;
+				max-width: 1100px;
+				margin: auto;
+				padding: 0 1em;
+			}
+			.sticky-toc {
+				position: sticky;
+				top: 2em;
+				font-size: 0.9em;
+			}
+			.prose {
+				max-width: 800px;
+			}
+			.hero-image {
+				width: 100%;
+				margin-bottom: 2em;
+			}
+			.hero-image img {
+				display: block;
+				margin: 0 auto;
+				width: 100%;
+				height: auto;
+			}
+			.author-block {
+				border-top: 2px solid var(--text-color);
+				margin-top: 3em;
+				padding-top: 1em;
+			}
+			/* Data-friendly table styling */
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin: 2em 0;
+			}
+			th {
+				background-color: var(--text-color);
+				color: var(--bg-color);
+				padding: 0.75em;
+				text-align: left;
+			}
+			td {
+				border: 1px solid #E5E5E5;
+				padding: 0.75em;
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+		<main>
+			<article class="layout-container">
+                <aside class="sticky-toc">
+                    <h3>Overview</h3>
+                    <!-- Ideally dynamic TOC via Astro slot or similar -->
+                </aside>
+                
+                <section>
+                    <div class="hero-image">
+                        {heroImage && <Image width={1020} height={510} src={heroImage} alt="" />}
+                    </div>
+                    <div class="prose">
+                        <div class="title">
+                            <h1>{title}</h1>
+                            <div class="date">
+                                <FormattedDate date={pubDate} />
+                            </div>
+                        </div>
+                        <slot />
+                        
+                        <div class="author-block">
+                            <h3>About the Author</h3>
+                            <p>Expert automotive content by SouthShift Editorial Team. Last updated: {updatedDate || pubDate}</p>
+                        </div>
+                    </div>
+                </section>
+			</article>
+		</main>
+		<Footer />
+	</body>
+</html>

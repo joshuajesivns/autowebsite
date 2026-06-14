@@ -1,0 +1,131 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import VehicleSpecCard from '../components/VehicleSpecCard.astro';
+import PandaCard from '../components/PandaCard.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import heroImage from '../assets/hero-hero.jpg';
+
+// Mock Data
+const featuredListings = [
+    { make: "Toyota", model: "AE86 Trueno", engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4 },
+    { make: "Nissan", model: "Skyline GT-R", engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4 },
+    { make: "Mitsubishi", model: "Lancer Evo VI", engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5 },
+    { make: "Honda", model: "NSX Type-R", engine: "C32B", transmission: "MT", fuel: "Gasoline", seats: 2 },
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section id="hero" style={`background-image: url(${heroImage.src})`}>
+				<div class="hero-overlay">
+                    <h1>Find Your Next Car</h1>
+                    <form class="quick-search">
+                        <select name="make"><option>Make ▼</option></select>
+                        <select name="model"><option>Model ▼</option></select>
+                        <select name="budget"><option>Budget ▼</option></select>
+                        <button type="submit">Search</button>
+                    </form>
+                </div>
+			</section>
+
+			<section id="trust-block">
+				<h2>Our Commitment</h2>
+				<p>Verifiable, enthusiast-owned import expertise. Licensed dealer #001.</p>
+			</section>
+
+			<section id="featured-listings">
+				<h2>Featured Listings</h2>
+				<div class="grid">
+                    {featuredListings.map(item => <VehicleSpecCard data={item} />)}
+                </div>
+			</section>
+
+			<section id="browse-category">
+				<h2>Browse by Category</h2>
+				<div class="grid">
+                    <PandaCard title="Kei Trucks" />
+                    <PandaCard title="Sports Cars" />
+                    <PandaCard title="RHD Vans" />
+                </div>
+			</section>
+
+			<section id="news-blog">
+				<h2>Automotive News & Blog</h2>
+				<div class="grid">
+                    <PandaCard title="Toyota Vios vs Honda City" />
+                    <PandaCard title="Top 5 Beginner JDM Imports" />
+                </div>
+			</section>
+
+			<section id="how-to">
+				<h2>How-To Guides</h2>
+				<ul>
+                    <li><a href="#">Toyota Vios Preventive Maintenance Schedule</a></li>
+                    <li><a href="#">LTO Registration Renewal Guide 2026</a></li>
+                </ul>
+			</section>
+
+			<section id="culture-hub">
+				<h2>JDM Culture Hub</h2>
+				<p>Stories on drift heritage and Touge culture in the Philippines.</p>
+			</section>
+
+			<section id="buyer-reviews">
+				<h2>Buyer Reviews</h2>
+				<p>"Smooth process from import to delivery. Verified!" - John D.</p>
+			</section>
+
+			<section id="closing-cta">
+				<h2>Ready to Find Your Dream Car?</h2>
+				<button>Browse Inventory</button>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+    #hero {
+        background-size: cover;
+        /* Adjusted positioning to keep the cars in focus */
+        background-position: center 40%; 
+        padding: 0;
+        min-height: 500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .hero-overlay {
+        background: rgba(0,0,0,0.5);
+        padding: 4em 1em;
+        text-align: center;
+        width: 100%;
+    }
+    #hero h1 { color: var(--bg-color); }
+
+    .quick-search {
+        display: flex;
+        gap: 1em;
+        justify-content: center;
+        background: var(--bg-color);
+        padding: 1.5em;
+        border: 2px solid var(--text-color);
+        border-radius: 0;
+        max-width: 800px;
+        margin: 2em auto 0;
+    }
+    .quick-search select {
+        padding: 0.5em;
+        border: 1px solid var(--text-color);
+        background: var(--bg-color);
+        cursor: pointer;
+    }
+</style>
