@@ -9,8 +9,9 @@
 
 :root {
 	--bg-color: #FFFFFF;
-	--text-color: #1A1A1A;
-	--accent-color: #E11D48;
+	--text-color: #111827; /* Matte Black */
+	--accent-color: #B91C1C; /* Metallic Red Mica */
+	--metal-gray: #6B7280; /* New structural gray */
 	--font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 body {
@@ -46,6 +47,7 @@ main {
     .grid { grid-template-columns: repeat(3, 1fr); gap: 2.5em; }
 }
 
+
 /* Card Component Styles */
 .panda-card {
     border: 1px solid var(--text-color);
@@ -56,6 +58,35 @@ main {
 }
 .panda-card h3 { margin: 0; }
 .panda-card img { border: none; }
+
+button {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+    padding: 0.8em 1.6em;
+    border: 1px solid var(--text-color);
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+}
+button:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+section {
+    padding: 4em 0;
+    border-bottom: 1px solid var(--metal-gray);
+}
+#hero {
+    text-align: center;
+    padding: 6em 1em;
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+#hero h1 { color: var(--bg-color); max-width: 800px; margin: 0 auto 1em; }
+#hero button { background-color: var(--bg-color); color: var(--text-color); border-color: var(--bg-color); }
+#hero button:hover { background-color: var(--accent-color); color: var(--bg-color); border-color: var(--accent-color); }
 
 	height: 1px;
 	width: 1px;

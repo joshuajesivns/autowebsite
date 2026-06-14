@@ -1,0 +1,66 @@
+---
+import PageLayout from '../../layouts/Page.astro';
+import VehicleSpecCard from '../../components/VehicleSpecCard.astro';
+import { SITE_TITLE } from '../../consts';
+
+// Mock pending listings data
+const pendingListings = [
+    { make: "Toyota", model: "Vios 2020", engine: "1.3L", transmission: "MT", fuel: "Gasoline", seats: 5 },
+    { make: "Honda", model: "Civic 2019", engine: "1.8L", transmission: "AT", fuel: "Gasoline", seats: 5 },
+];
+---
+
+<PageLayout
+    title="Moderator Dashboard"
+    description="Review and approve pending listings."
+>
+    <h2>Moderation Queue</h2>
+    <p>Review pending submissions against Apex Engine quality standards.</p>
+
+    <div class="moderation-grid">
+        {pendingListings.map(listing => (
+            <div class="moderation-item">
+                <VehicleSpecCard data={listing} />
+                <div class="actions">
+                    <button class="approve">Approve</button>
+                    <button class="reject">Reject</button>
+                </div>
+            </div>
+        ))}
+    </div>
+</PageLayout>
+
+<style>
+    .moderation-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2em;
+        margin-top: 2em;
+    }
+    .moderation-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5em;
+    }
+    .actions {
+        display: flex;
+        gap: 1em;
+    }
+    button {
+        flex: 1;
+        text-transform: uppercase;
+        font-weight: 700;
+        padding: 0.5em;
+        cursor: pointer;
+    }
+    .approve {
+        background: #228B22;
+        color: white;
+        border: none;
+    }
+    .reject {
+        background: var(--accent-color);
+        color: white;
+        border: none;
+    }
+</style>
