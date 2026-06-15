@@ -1,9 +1,4 @@
 /*
-  The CSS in this style tag is based off of Bear Blog's default CSS.
-  https://github.com/HermanMartinus/bearblog/blob/297026a877bc2ab2b3bdfbd6b9f7961c350917dd/templates/styles/blog/default.css
-  License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
- */
-/*
   Panda Aesthetic - SouthShift
  */
 
@@ -33,28 +28,24 @@ main {
     main { padding: 2em; }
 }
 
-main .grid {
-    display: grid;
-    grid-template-columns: 1fr; /* Mobile-first */
-    gap: 1em;
+h1, h2, h3, h4, h5, h6 {
+	margin: 0 0 0.75rem 0;
+	color: var(--text-color);
+	font-weight: 700;
+	line-height: 1.1;
+    letter-spacing: -0.02em;
 }
-@media (min-width: 600px) {
-    main .grid { grid-template-columns: repeat(2, 1fr); gap: 1em; }
-}
-@media (min-width: 768px) {
-    main .grid { grid-template-columns: repeat(4, 1fr) !important; gap: 1.5em; }
-}
+h1 { font-size: 3em; }
+h2 { font-size: 2.25em; }
 
-/* Card Component Styles */
-.panda-card {
-    border: 1px solid var(--text-color);
-    padding: 1.5em;
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
+a {
+	color: var(--text-color);
+	text-decoration: underline;
+	text-underline-offset: 4px;
 }
-.panda-card h3 { margin: 0; }
-.panda-card img { border: none; }
+a:hover {
+	color: var(--accent-color);
+}
 
 button {
     background-color: var(--text-color);
@@ -71,19 +62,50 @@ button:hover {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
 }
+
 section {
     padding: 4em 0;
     border-bottom: 1px solid var(--metal-gray);
 }
+
 #hero {
     text-align: center;
     padding: 6em 1em;
     background-color: var(--text-color);
     color: var(--bg-color);
+    background-size: cover;
+    background-position: center 40%;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 #hero h1 { color: var(--bg-color); max-width: 800px; margin: 0 auto 1em; }
 #hero button { background-color: var(--bg-color); color: var(--text-color); border-color: var(--bg-color); }
 #hero button:hover { background-color: var(--accent-color); color: var(--bg-color); border-color: var(--accent-color); }
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Mobile-first */
+    gap: 1em;
+}
+@media (min-width: 600px) {
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 1em; }
+}
+@media (min-width: 768px) {
+    .grid { grid-template-columns: repeat(4, 1fr); gap: 1.5em; }
+}
+
+/* Card Component Styles */
+.panda-card {
+    border: 1px solid var(--text-color);
+    padding: 1.5em;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+.panda-card h3 { margin: 0; }
+.panda-card img { border: none; }
 
 .sr-only {
 	border: 0;
@@ -93,12 +115,7 @@ section {
 	height: 1px;
 	width: 1px;
 	overflow: hidden;
-	/* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
-	clip: rect(1px 1px 1px 1px);
-	/* maybe deprecated but we need to support legacy browsers */
 	clip: rect(1px, 1px, 1px, 1px);
-	/* modern browsers, clip-path works inwards from each corner */
 	clip-path: inset(50%);
-	/* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
 	white-space: nowrap;
 }
