@@ -72,21 +72,44 @@ section {
     border-bottom: 1px solid var(--metal-gray);
 }
 
+/* Header & Hero Overrides */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--bg-color);
+    border-bottom: 2px solid var(--text-color);
+    padding: 1em 2em;
+}
+
 #hero {
     text-align: center;
-    padding: 6em 1em;
-    background-color: var(--text-color);
-    color: var(--bg-color);
+    padding: 8em 1em;
     background-size: cover;
     background-position: center 40%;
-    min-height: 500px;
+    min-height: 600px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-#hero h1 { color: var(--bg-color); max-width: 800px; margin: 0 auto 1em; }
-#hero button { background-color: var(--bg-color); color: var(--text-color); border-color: var(--bg-color); }
-#hero button:hover { background-color: var(--accent-color); color: var(--bg-color); border-color: var(--accent-color); }
+.hero-overlay {
+    background: rgba(17, 24, 39, 0.7);
+    padding: 3em;
+    backdrop-filter: blur(4px);
+    width: 100%;
+    max-width: 900px;
+}
+.quick-search {
+    display: flex;
+    gap: 1em;
+    justify-content: center;
+    background: var(--bg-color);
+    padding: 1.5em;
+    border: 2px solid var(--text-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    max-width: 800px;
+    margin: 2em auto 0;
+}
 
 .grid {
     display: grid;
