@@ -1,0 +1,127 @@
+/*
+  Panda Aesthetic - SouthShift - BASE STYLES
+ */
+
+:root {
+	--bg-color: #FFFFFF;
+	--text-color: #111827;
+	--accent-color: #B91C1C;
+	--metal-gray: #6B7280;
+	--font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+	font-family: var(--font-stack);
+	margin: 0;
+	padding: 0;
+	background-color: var(--bg-color);
+	color: var(--text-color);
+	font-size: 16px;
+	line-height: 1.5;
+}
+
+main {
+	max-width: 1400px;
+	margin: auto;
+	padding: 1em;
+}
+
+@media (min-width: 768px) {
+    body { font-size: 18px; }
+    main { padding: 2em; }
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin: 0 0 0.75rem 0;
+	color: var(--text-color);
+	font-weight: 700;
+	line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+h1 { font-size: 3em; }
+h2 { font-size: 2.25em; }
+
+a {
+	color: var(--text-color);
+	text-decoration: underline;
+	text-underline-offset: 4px;
+}
+a:hover {
+	color: var(--accent-color);
+}
+
+button {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+    padding: 0.8em 1.6em;
+    border: 1px solid var(--text-color);
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+}
+button:hover {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+section {
+    padding: 4em 0;
+    border-bottom: 1px solid var(--metal-gray);
+}
+
+#hero {
+    text-align: center;
+    padding: 6em 1em;
+    background-color: var(--text-color);
+    color: var(--bg-color);
+    background-size: cover;
+    background-position: center 40%;
+    min-height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#hero h1 { color: var(--bg-color); max-width: 800px; margin: 0 auto 1em; }
+#hero button { background-color: var(--bg-color); color: var(--text-color); border-color: var(--bg-color); }
+#hero button:hover { background-color: var(--accent-color); color: var(--bg-color); border-color: var(--accent-color); }
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1em;
+}
+
+@media (min-width: 600px) {
+    .grid { grid-template-columns: repeat(2, 1fr); gap: 1em; }
+}
+
+@media (min-width: 768px) {
+    .grid { grid-template-columns: repeat(4, 1fr); gap: 1.5em; }
+}
+
+/* Card Component Styles */
+.panda-card {
+    border: 1px solid var(--text-color);
+    padding: 1.5em;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+}
+.panda-card h3 { margin: 0; }
+.panda-card img { border: none; }
+
+.sr-only {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	position: absolute !important;
+	height: 1px;
+	width: 1px;
+	overflow: hidden;
+	clip: rect(1px, 1px, 1px, 1px);
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
