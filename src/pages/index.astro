@@ -100,19 +100,19 @@ const featuredListings = [
 <style>
     #hero {
         background-size: cover;
-        /* Adjusted positioning to keep the cars in focus */
         background-position: center 40%; 
         padding: 0;
-        min-height: 500px;
+        min-height: 600px;
         display: flex;
         align-items: center;
         justify-content: center;
     }
     .hero-overlay {
-        background: rgba(0,0,0,0.5);
+        background: rgba(17, 24, 39, 0.7);
         padding: 4em 1em;
         text-align: center;
         width: 100%;
+        backdrop-filter: blur(4px);
     }
     #hero h1 { color: var(--bg-color); }
 
@@ -126,11 +126,24 @@ const featuredListings = [
         border-radius: 0;
         max-width: 800px;
         margin: 2em auto 0;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
     .quick-search select {
         padding: 0.5em;
         border: 1px solid var(--text-color);
         background: var(--bg-color);
         cursor: pointer;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5em;
+        margin-top: 2em;
+    }
+    @media (min-width: 768px) {
+        .grid {
+            grid-template-columns: repeat(4, 1fr) !important;
+        }
     }
 </style>
