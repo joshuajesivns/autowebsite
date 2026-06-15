@@ -33,16 +33,16 @@ main {
     main { padding: 2em; }
 }
 
-.grid {
+main .grid {
     display: grid;
     grid-template-columns: 1fr; /* Mobile-first */
     gap: 1em;
 }
 @media (min-width: 600px) {
-    .grid { grid-template-columns: repeat(2, 1fr); gap: 1em; }
+    main .grid { grid-template-columns: repeat(2, 1fr); gap: 1em; }
 }
 @media (min-width: 768px) {
-    .grid { grid-template-columns: repeat(4, 1fr); gap: 1.5em; }
+    main .grid { grid-template-columns: repeat(4, 1fr) !important; gap: 1.5em; }
 }
 
 /* Card Component Styles */
