@@ -82,7 +82,7 @@ const featuredListings = [
 
 			<section id="featured-listings">
 				<h2>Featured Listings</h2>
-				<div class="grid">
+				<div class="listing-grid">
                     {featuredListings.map(item => <VehicleSpecCard data={item} />)}
                 </div>
 			</section>
@@ -246,7 +246,23 @@ const featuredListings = [
     }
     #how-to li a:hover { border-color: var(--accent-color); }
 
-    /* ---- Grids ---- */
+    /* ---- Featured listings: self-contained grid, no shared-class conflict ----
+       Uses its own class so the global `.grid` rules (and any cached CSS) can't
+       fight it. 8 cards => 2 rows x 4 on laptops+. */
+    .listing-grid {
+        display: grid;
+        gap: 1.5em;
+        margin-top: 2em;
+        grid-template-columns: 1fr;
+    }
+    @media (min-width: 600px) {
+        .listing-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 900px) {
+        .listing-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ---- Other homepage grids (category / news) ---- */
     .grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -256,9 +272,7 @@ const featuredListings = [
     @media (min-width: 600px) {
         .grid { grid-template-columns: repeat(2, 1fr); }
     }
-    /* Featured listings: explicit 4-across (8 cards => 2 rows x 4) on laptops+ */
     @media (min-width: 900px) {
-        #featured-listings .grid { grid-template-columns: repeat(4, 1fr); }
         #browse-category .grid { grid-template-columns: repeat(3, 1fr); }
     }
 
