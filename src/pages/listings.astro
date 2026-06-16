@@ -4,15 +4,7 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import VehicleSpecCard from '../components/VehicleSpecCard.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import heroImage from '../assets/hero-hero.jpg';
-
-// Mock data until we have a real content collection.
-// Shape matches the future listing-card contract in VehicleSpecCard.
-const listings = [
-    { make: "Toyota", model: "AE86 Trueno", year: 1985, engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "118,400 km", grade: "4 / B", price: 1450000, verified: true, image: heroImage },
-    { make: "Nissan", model: "Skyline GT-R", year: 1999, engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "86,200 km", grade: "4.5 / A", price: 4200000, verified: true, image: heroImage },
-    { make: "Mitsubishi", model: "Lancer Evo VI", year: 1999, engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5, mileage: "102,750 km", grade: "4 / B", price: 1850000, verified: true, image: heroImage },
-];
+import { listings } from '../data/listings';
 ---
 
 <!doctype html>
@@ -25,22 +17,93 @@ const listings = [
 		<main>
 			<section>
 				<h1>Inventory</h1>
-                <div class="grid">
-                    {listings.map(item => (
-                        <VehicleSpecCard data={item} />
-                    ))}
-                </div>
+				<p id="results-bar" class="results-bar" aria-live="polite"></p>
+
+				<div class="grid">
+					{listings.map((item) => (
+						<div
+							class="listing-item"
+							data-make={item.make.toLowerCase()}
+							data-model={item.model.toLowerCase()}
+							data-price={item.price}
+						>
+							<VehicleSpecCard data={item} />
+						</div>
+					))}
+				</div>
+
+				<p id="empty-state" class="empty-state" hidden>
+					No cars match your filters. <a href="/listings">Reset</a>
+				</p>
 			</section>
 		</main>
 		<Footer />
+
+		<script>
+			// Static-site friendly: filter the rendered listings from the URL query.
+			const params = new URLSearchParams(location.search);
+			const fMake = (params.get('make') || '').toLowerCase();
+			const fModel = (params.get('model') || '').toLowerCase();
+			const fBudget = Number(params.get('budget') || 0);
+
+			const items = Array.from(document.querySelectorAll<HTMLElement>('.listing-item'));
+			let shown = 0;
+			for (const el of items) {
+				const okMake = !fMake || el.dataset.make === fMake;
+				const okModel = !fModel || el.dataset.model === fModel;
+				const okBudget = !fBudget || Number(el.dataset.price) <= fBudget;
+				const show = okMake && okModel && okBudget;
+				el.hidden = !show;
+				if (show) shown++;
+			}
+
+			const filtered = Boolean(fMake || fModel || fBudget);
+			const bar = document.getElementById('results-bar')!;
+			const empty = document.getElementById('empty-state')!;
+			const noun = (n: number) => (n === 1 ? 'car' : 'cars');
+
+			if (filtered) {
+				bar.innerHTML = `<span>${shown} ${noun(shown)} match your filters</span> <a href="/listings">Clear filters</a>`;
+			} else {
+				bar.innerHTML = `<span>${items.length} ${noun(items.length)} available</span>`;
+			}
+			empty.hidden = shown !== 0;
+		</script>
 	</body>
 </html>
 
 <style>
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 2em;
-        margin-top: 2em;
-    }
+	.results-bar {
+		display: flex;
+		gap: 1em;
+		align-items: baseline;
+		margin: 0;
+		color: var(--metal-gray);
+		font-size: 0.95rem;
+	}
+	.results-bar a {
+		color: var(--red-mica);
+		font-weight: 700;
+		text-decoration: none;
+	}
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+		gap: 2em;
+		margin-top: 1.5em;
+	}
+	.listing-item[hidden] {
+		display: none;
+	}
+	.empty-state {
+		margin-top: 2em;
+		padding: 2em;
+		border: 1px dashed var(--metal-gray);
+		text-align: center;
+		color: var(--metal-gray);
+	}
+	.empty-state a {
+		color: var(--red-mica);
+		font-weight: 700;
+	}
 </style>

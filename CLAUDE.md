@@ -39,8 +39,12 @@ reshaped into the product below.
 - Branding split between "Apex Engine" and "SouthShift" (see above).
 - `astro.config.mjs` `site` is still the placeholder `https://example.com` — breaks canonical URLs,
   sitemap, RSS, and OG image absolute URLs. Should be set to the real domain.
-- Listings use hardcoded mock arrays; `src/data/vehicles/*.json` is not wired into a content
-  collection yet (`content.config.ts` only defines `blog`).
+- Inventory is centralized (still mock) in `src/data/listings.ts` — the single source for the
+  homepage featured grid, the hero search dropdowns (derived `makes` / `modelsByMake`), and the
+  `/listings` page. Replace with a content collection when real inventory exists (`content.config.ts`
+  only defines `blog`; `src/data/vehicles/*.json` is not yet wired in).
+- Hero search is functional: dependent Make→Model dropdowns submit to `/listings`, which filters
+  **client-side** from the URL query (the site is static, so no server-side filtering).
 - `src/content/blog/toyota-avanza-2018-review.md` uses MDX syntax but has a `.md` extension, so its
   components render as raw text — should be renamed `.mdx`.
 - `Footer.astro` is still Astro-starter boilerplate ("Your name here", Astro social links) and uses

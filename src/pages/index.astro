@@ -7,19 +7,8 @@ import VehicleSpecCard from '../components/VehicleSpecCard.astro';
 import PandaCard from '../components/PandaCard.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import heroImage from '../assets/hero-hero.jpg';
+import { listings as featuredListings, makes, modelsByMake } from '../data/listings';
 import '../styles/apex.css';
-
-// Mock data — shape matches the future listing-card contract in VehicleSpecCard.
-const featuredListings = [
-    { make: "Toyota", model: "AE86 Trueno", year: 1985, engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "118,400 km", grade: "4 / B", price: 1450000, verified: true, image: heroImage },
-    { make: "Nissan", model: "Skyline GT-R", year: 1999, engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "86,200 km", grade: "4.5 / A", price: 4200000, verified: true, image: heroImage },
-    { make: "Mitsubishi", model: "Lancer Evo VI", year: 1999, engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5, mileage: "102,750 km", grade: "4 / B", price: 1850000, verified: true, image: heroImage },
-    { make: "Honda", model: "NSX Type-R", year: 1995, engine: "C32B", transmission: "MT", fuel: "Gasoline", seats: 2, mileage: "64,900 km", grade: "5 / A", price: 6800000, verified: true, image: heroImage },
-    { make: "Toyota", model: "Supra A80", year: 1997, engine: "2JZ-GTE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "94,300 km", grade: "4.5 / B", price: 3950000, verified: true, image: heroImage },
-    { make: "Subaru", model: "Impreza WRX STI", year: 2000, engine: "EJ20", transmission: "MT", fuel: "Gasoline", seats: 5, mileage: "121,000 km", grade: "4 / C", price: 1320000, verified: true, image: heroImage },
-    { make: "Mazda", model: "RX-7 FD", year: 1996, engine: "13B-REW", transmission: "MT", fuel: "Gasoline", seats: 2, mileage: "78,500 km", grade: "4.5 / B", price: 2600000, verified: true, image: heroImage },
-    { make: "Toyota", model: "Celica GT-Four", year: 1994, engine: "3S-GTE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "133,200 km", grade: "4 / B", price: 980000, verified: true, image: heroImage },
-];
 ---
 
 <!doctype html>
@@ -49,15 +38,12 @@ const featuredListings = [
                             <label class="sr-only" for="search-make">Make</label>
                             <select id="search-make" name="make">
                                 <option value="">Make</option>
-                                <option value="toyota">Toyota</option>
-                                <option value="nissan">Nissan</option>
-                                <option value="honda">Honda</option>
-                                <option value="mazda">Mazda</option>
+                                {makes.map((m) => <option value={m.toLowerCase()}>{m}</option>)}
                             </select>
                         </div>
                         <div class="field">
                             <label class="sr-only" for="search-model">Model</label>
-                            <select id="search-model" name="model">
+                            <select id="search-model" name="model" disabled>
                                 <option value="">Model</option>
                             </select>
                         </div>
@@ -138,6 +124,22 @@ const featuredListings = [
 			</section>
 		</main>
 		<Footer />
+		<script define:vars={{ modelsByMake }}>
+			// Hero search: Model options depend on the chosen Make.
+			const makeSel = document.getElementById('search-make');
+			const modelSel = document.getElementById('search-model');
+
+			function fillModels() {
+				const models = modelsByMake[makeSel.value] || [];
+				modelSel.innerHTML =
+					'<option value="">Model</option>' +
+					models.map((m) => `<option value="${m.toLowerCase()}">${m}</option>`).join('');
+				modelSel.disabled = models.length === 0;
+			}
+
+			makeSel.addEventListener('change', fillModels);
+			fillModels();
+		</script>
 	</body>
 </html>
 
