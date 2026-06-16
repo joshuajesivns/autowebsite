@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
@@ -29,13 +30,46 @@ const featuredListings = [
 	<body>
 		<Header />
 		<main>
-			<section id="hero" style={`background-image: url(${heroImage.src})`}>
+			<section id="hero">
+				<Image
+					class="hero-bg"
+					src={heroImage}
+					alt=""
+					widths={[768, 1280, 1920]}
+					sizes="100vw"
+					loading="eager"
+					fetchpriority="high"
+					aria-hidden="true"
+				/>
 				<div class="hero-overlay">
                     <h1>The Apex of Automotive Engineering</h1>
-                    <form class="quick-search">
-                        <select name="make"><option>Make ▼</option></select>
-                        <select name="model"><option>Model ▼</option></select>
-                        <select name="budget"><option>Budget ▼</option></select>
+                    <p class="hero-sub">Verified imports and honest technical documentation — every machine, fully spec'd.</p>
+                    <form class="quick-search" action="/listings" method="get">
+                        <div class="field">
+                            <label class="sr-only" for="search-make">Make</label>
+                            <select id="search-make" name="make">
+                                <option value="">Make</option>
+                                <option value="toyota">Toyota</option>
+                                <option value="nissan">Nissan</option>
+                                <option value="honda">Honda</option>
+                                <option value="mazda">Mazda</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="sr-only" for="search-model">Model</label>
+                            <select id="search-model" name="model">
+                                <option value="">Model</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="sr-only" for="search-budget">Budget</label>
+                            <select id="search-budget" name="budget">
+                                <option value="">Budget</option>
+                                <option value="500000">Under ₱500k</option>
+                                <option value="1000000">Under ₱1M</option>
+                                <option value="2000000">Under ₱2M</option>
+                            </select>
+                        </div>
                         <button type="submit">Search</button>
                     </form>
                 </div>
@@ -85,7 +119,10 @@ const featuredListings = [
 
 			<section id="buyer-reviews">
 				<h2>Buyer Reviews</h2>
-				<p>"Smooth process from import to delivery. Verified!" - John D.</p>
+				<blockquote>
+					"Smooth process from import to delivery. Verified!"
+					<footer>— John D.</footer>
+				</blockquote>
 			</section>
 
 			<section id="closing-cta">
@@ -98,52 +135,137 @@ const featuredListings = [
 </html>
 
 <style>
+    /* ---- Hero ---- */
     #hero {
-        background-size: cover;
-        background-position: center 40%; 
+        position: relative;
         padding: 0;
-        min-height: 600px;
+        min-height: clamp(440px, 70vh, 640px);
         display: flex;
         align-items: center;
         justify-content: center;
+        overflow: hidden;
+        border-bottom: none;
+    }
+    /* Optimized <Image> sits behind the overlay as the LCP element */
+    .hero-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 40%;
+        z-index: 0;
     }
     .hero-overlay {
-        background: rgba(17, 24, 39, 0.7);
-        padding: 4em 1em;
+        position: relative;
+        z-index: 1;
+        background: rgba(17, 24, 39, 0.65);
+        padding: clamp(2.5em, 8vw, 5em) 1em;
         text-align: center;
         width: 100%;
-        backdrop-filter: blur(4px);
+        backdrop-filter: blur(3px);
     }
-    #hero h1 { color: var(--bg-color); }
+    #hero h1 {
+        color: var(--bg-color);
+        font-size: clamp(2rem, 6vw, 3.5rem);
+        max-width: 16ch;
+        margin-inline: auto;
+    }
+    .hero-sub {
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 52ch;
+        margin: 0.5em auto 0;
+        font-size: clamp(1rem, 2.5vw, 1.15rem);
+    }
 
+    /* ---- Quick search ---- */
     .quick-search {
         display: flex;
-        gap: 1em;
+        flex-wrap: wrap;
+        gap: 0.75em;
         justify-content: center;
         background: var(--bg-color);
-        padding: 1.5em;
+        padding: 1.25em;
         border: 2px solid var(--text-color);
-        border-radius: 0;
-        max-width: 800px;
+        max-width: 820px;
         margin: 2em auto 0;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+    .quick-search .field {
+        flex: 1 1 160px;
     }
     .quick-search select {
-        padding: 0.5em;
+        width: 100%;
+        padding: 0.65em;
         border: 1px solid var(--text-color);
         background: var(--bg-color);
         cursor: pointer;
+        font: inherit;
+    }
+    .quick-search button {
+        flex: 1 1 120px;
     }
 
+    /* ---- Section rhythm: break the monotonous bordered-band stack ---- */
+    main :global(section) {
+        border-bottom: none;
+        padding-block: clamp(2.5em, 6vw, 4em);
+    }
+    #trust-block {
+        text-align: center;
+        background: var(--text-color);
+        color: var(--bg-color);
+        margin-inline: calc(50% - 50vw);
+        padding-inline: 1em;
+    }
+    #trust-block :global(h2) { color: var(--bg-color); }
+    #trust-block p { color: rgba(255, 255, 255, 0.8); max-width: 60ch; margin-inline: auto; }
+
+    #buyer-reviews blockquote {
+        font-size: 1.25em;
+        border-left: 4px solid var(--accent-color);
+        margin: 1em 0 0;
+        padding-left: 1em;
+        font-style: italic;
+    }
+
+    #closing-cta { text-align: center; }
+
+    #how-to ul {
+        list-style: none;
+        padding: 0;
+        margin-top: 1em;
+        display: grid;
+        gap: 0.5em;
+    }
+    #how-to li a {
+        display: block;
+        padding: 0.75em 1em;
+        border: 1px solid var(--metal-gray);
+        text-decoration: none;
+    }
+    #how-to li a:hover { border-color: var(--accent-color); }
+
+    /* ---- Grids ---- */
     .grid {
         display: grid;
         grid-template-columns: 1fr;
         gap: 1.5em;
         margin-top: 2em;
     }
-    @media (min-width: 768px) {
-        .grid {
-            grid-template-columns: repeat(4, 1fr) !important;
-        }
+    @media (min-width: 600px) {
+        .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    /* Featured listings: explicit 4-across (8 cards => 2 rows x 4) on laptops+ */
+    @media (min-width: 900px) {
+        #featured-listings .grid { grid-template-columns: repeat(4, 1fr); }
+        #browse-category .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    /* ---- Visible keyboard focus across interactive homepage elements ---- */
+    .quick-search :is(select, button):focus-visible,
+    #how-to a:focus-visible {
+        outline: 3px solid var(--accent-color);
+        outline-offset: 2px;
     }
 </style>
