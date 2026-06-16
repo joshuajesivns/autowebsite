@@ -45,7 +45,16 @@ reshaped into the product below.
   components render as raw text — should be renamed `.mdx`.
 - `Footer.astro` is still Astro-starter boilerplate ("Your name here", Astro social links) and uses
   CSS vars not defined in `apex.css`.
-- Unused stylesheets: `src/styles/base.css`, `src/styles/global.css` (only `apex.css` is imported).
+
+## Design system
+- Single source of truth: `src/styles/apex.css` (the old dead `base.css` / `global.css` were deleted).
+- Palette = "Panda" black & white (AE86 Trueno) + automotive mica tokens: `--paper`, `--paper-off`,
+  `--black-mica`(/`-2`), `--metal-gray`(/`-light`), `--red-mica`(/`-dark`), `--mica-dark` (gradient).
+  Semantic aliases `--bg-color` / `--text-color` / `--accent-color` map onto these.
+- Red is an accent only — verified badges, `button.primary` CTAs, active state. Never decoration.
+- `VehicleSpecCard` defines the **future listing-card contract**: required core specs plus
+  transparency fields (`verified`, `grade`, `mileage`, `price`, `year`) that embody the brand promise.
+  Real listings should always populate the transparency fields.
 
 ## Commands
 - `npm run dev` — local dev server (localhost:4321)

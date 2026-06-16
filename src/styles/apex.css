@@ -3,10 +3,36 @@
 */
 
 :root {
-	--bg-color: #FFFFFF;
-	--text-color: #111827;
-	--accent-color: #B91C1C;
-	--metal-gray: #6B7280;
+	/* ---- Brand palette ----------------------------------------------------
+	   "Panda" black & white foundation (AE86 Sprinter Trueno) extended with
+	   automotive mica finishes so it resonates beyond one car. Use red as a
+	   scalpel: verified badges, primary CTAs, active state — never decoration. */
+
+	/* Surfaces */
+	--paper:        #FFFFFF;  /* Panda white */
+	--paper-off:    #F4F4F4;  /* subtle off-white for section contrast */
+	--line:         #E5E7EB;  /* hairline borders */
+
+	/* Black mica (cool-tinted near-black, not flat #000) */
+	--black-mica:   #111827;
+	--black-mica-2: #1C2536;  /* lighter step for metallic gradients */
+
+	/* Metal gray */
+	--metal-gray:        #6B7280;
+	--metal-gray-light:  #9CA3AF;
+
+	/* Red mica — the single accent */
+	--red-mica:      #B91C1C;
+	--red-mica-dark: #7F1212; /* depth / hover */
+
+	/* Metallic "mica" sheen for dark bands */
+	--mica-dark: linear-gradient(135deg, var(--black-mica-2) 0%, var(--black-mica) 65%);
+
+	/* ---- Semantic aliases (components reference intent, not raw color) ---- */
+	--bg-color:     var(--paper);
+	--text-color:   var(--black-mica);
+	--accent-color: var(--red-mica);
+
 	--font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -65,6 +91,17 @@ button {
 button:hover {
     background-color: var(--accent-color);
     border-color: var(--accent-color);
+}
+
+/* Primary call-to-action — the one place red leads, not follows */
+button.primary {
+    background-color: var(--red-mica);
+    border-color: var(--red-mica);
+    color: var(--paper);
+}
+button.primary:hover {
+    background-color: var(--red-mica-dark);
+    border-color: var(--red-mica-dark);
 }
 
 section {

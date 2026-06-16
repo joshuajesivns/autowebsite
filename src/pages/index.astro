@@ -9,16 +9,16 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import heroImage from '../assets/hero-hero.jpg';
 import '../styles/apex.css';
 
-// Mock Data
+// Mock data — shape matches the future listing-card contract in VehicleSpecCard.
 const featuredListings = [
-    { make: "Toyota", model: "AE86 Trueno", engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4, image: heroImage },
-    { make: "Nissan", model: "Skyline GT-R", engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4, image: heroImage },
-    { make: "Mitsubishi", model: "Lancer Evo VI", engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5, image: heroImage },
-    { make: "Honda", model: "NSX Type-R", engine: "C32B", transmission: "MT", fuel: "Gasoline", seats: 2, image: heroImage },
-    { make: "Toyota", model: "Supra A80", engine: "2JZ-GTE", transmission: "MT", fuel: "Gasoline", seats: 4, image: heroImage },
-    { make: "Subaru", model: "Impreza WRX STI", engine: "EJ20", transmission: "MT", fuel: "Gasoline", seats: 5, image: heroImage },
-    { make: "Mazda", model: "RX-7 FD", engine: "13B-REW", transmission: "MT", fuel: "Gasoline", seats: 2, image: heroImage },
-    { make: "Toyota", model: "Celica GT-Four", engine: "3S-GTE", transmission: "MT", fuel: "Gasoline", seats: 4, image: heroImage },
+    { make: "Toyota", model: "AE86 Trueno", year: 1985, engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "118,400 km", grade: "4 / B", price: 1450000, verified: true, image: heroImage },
+    { make: "Nissan", model: "Skyline GT-R", year: 1999, engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "86,200 km", grade: "4.5 / A", price: 4200000, verified: true, image: heroImage },
+    { make: "Mitsubishi", model: "Lancer Evo VI", year: 1999, engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5, mileage: "102,750 km", grade: "4 / B", price: 1850000, verified: true, image: heroImage },
+    { make: "Honda", model: "NSX Type-R", year: 1995, engine: "C32B", transmission: "MT", fuel: "Gasoline", seats: 2, mileage: "64,900 km", grade: "5 / A", price: 6800000, verified: true, image: heroImage },
+    { make: "Toyota", model: "Supra A80", year: 1997, engine: "2JZ-GTE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "94,300 km", grade: "4.5 / B", price: 3950000, verified: true, image: heroImage },
+    { make: "Subaru", model: "Impreza WRX STI", year: 2000, engine: "EJ20", transmission: "MT", fuel: "Gasoline", seats: 5, mileage: "121,000 km", grade: "4 / C", price: 1320000, verified: true, image: heroImage },
+    { make: "Mazda", model: "RX-7 FD", year: 1996, engine: "13B-REW", transmission: "MT", fuel: "Gasoline", seats: 2, mileage: "78,500 km", grade: "4.5 / B", price: 2600000, verified: true, image: heroImage },
+    { make: "Toyota", model: "Celica GT-Four", year: 1994, engine: "3S-GTE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "133,200 km", grade: "4 / B", price: 980000, verified: true, image: heroImage },
 ];
 ---
 
@@ -70,14 +70,21 @@ const featuredListings = [
                                 <option value="2000000">Under ₱2M</option>
                             </select>
                         </div>
-                        <button type="submit">Search</button>
+                        <button type="submit" class="primary">Search</button>
                     </form>
                 </div>
 			</section>
 
 			<section id="trust-block">
-				<h2>Our Commitment</h2>
-				<p>Verifiable, enthusiast-owned import expertise. Licensed dealer #001.</p>
+				<h2>We document machines, not just list them</h2>
+				<p>Basic specs aren't enough. Every Apex Engine listing is backed by an in-house technical audit — so you buy on evidence, not promises.</p>
+				<ul class="standard">
+					<li><span>✓</span> Verified odometer</li>
+					<li><span>✓</span> Japan auction grade</li>
+					<li><span>✓</span> Inspection report</li>
+					<li><span>✓</span> EV/hybrid battery health</li>
+				</ul>
+				<p class="license">Licensed dealer #001</p>
 			</section>
 
 			<section id="featured-listings">
@@ -127,7 +134,7 @@ const featuredListings = [
 
 			<section id="closing-cta">
 				<h2>Ready to Find Your Dream Car?</h2>
-				<button>Browse Inventory</button>
+				<button class="primary">Browse Inventory</button>
 			</section>
 		</main>
 		<Footer />
@@ -213,13 +220,40 @@ const featuredListings = [
     }
     #trust-block {
         text-align: center;
-        background: var(--text-color);
-        color: var(--bg-color);
+        background: var(--mica-dark);
+        color: var(--paper);
         margin-inline: calc(50% - 50vw);
         padding-inline: 1em;
     }
-    #trust-block :global(h2) { color: var(--bg-color); }
-    #trust-block p { color: rgba(255, 255, 255, 0.8); max-width: 60ch; margin-inline: auto; }
+    #trust-block :global(h2) { color: var(--paper); max-width: 22ch; margin-inline: auto; }
+    #trust-block p { color: rgba(255, 255, 255, 0.82); max-width: 60ch; margin-inline: auto; }
+    #trust-block .standard {
+        list-style: none;
+        padding: 0;
+        margin: 1.5em auto 0;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.75em 1.5em;
+        max-width: 760px;
+    }
+    #trust-block .standard li {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.85rem;
+    }
+    #trust-block .standard span {
+        color: var(--red-mica);
+        margin-right: 0.35em;
+    }
+    #trust-block .license {
+        margin-top: 1.75em;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--metal-gray-light);
+    }
 
     #buyer-reviews blockquote {
         font-size: 1.25em;

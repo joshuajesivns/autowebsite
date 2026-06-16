@@ -4,12 +4,14 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import VehicleSpecCard from '../components/VehicleSpecCard.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import heroImage from '../assets/hero-hero.jpg';
 
-// Mock data until we have a real content collection
+// Mock data until we have a real content collection.
+// Shape matches the future listing-card contract in VehicleSpecCard.
 const listings = [
-    { make: "Toyota", model: "AE86 Trueno", engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4 },
-    { make: "Nissan", model: "Skyline GT-R", engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4 },
-    { make: "Mitsubishi", model: "Lancer Evo VI", engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5 },
+    { make: "Toyota", model: "AE86 Trueno", year: 1985, engine: "4A-GE", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "118,400 km", grade: "4 / B", price: 1450000, verified: true, image: heroImage },
+    { make: "Nissan", model: "Skyline GT-R", year: 1999, engine: "RB26DETT", transmission: "MT", fuel: "Gasoline", seats: 4, mileage: "86,200 km", grade: "4.5 / A", price: 4200000, verified: true, image: heroImage },
+    { make: "Mitsubishi", model: "Lancer Evo VI", year: 1999, engine: "4G63", transmission: "MT", fuel: "Gasoline", seats: 5, mileage: "102,750 km", grade: "4 / B", price: 1850000, verified: true, image: heroImage },
 ];
 ---
 

@@ -1,28 +1,54 @@
 ---
 import { Image } from 'astro:assets';
 
+/* Future listing-card contract. Core specs are required; the transparency
+   fields (verified / grade / mileage / price) are what set Apex Engine apart
+   from a basic spec dump — populate them for every real listing. */
 interface Props {
 	data: {
 		make: string;
 		model: string;
+		year?: number;
 		engine: string;
 		transmission: string;
 		fuel: string;
 		seats: number;
-        image?: any; // Optional property
+		mileage?: string;    // verified odometer, e.g. "48,000 km"
+		grade?: string;      // auction / inspection grade, e.g. "4.5 / B"
+		price?: number;      // PHP
+		verified?: boolean;  // passed in-house technical audit
+		image?: any;
 	};
 }
 
 const { data } = Astro.props;
+const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
 ---
 
 <article class="spec-plate">
-    {data.image && (
-        <div class="image-container">
-            <Image src={data.image} alt={data.model} width="300" height="200" />
-        </div>
-    )}
-	<h3>{data.make} {data.model}</h3>
+	<div class="image-container">
+		{data.image && (
+			<Image src={data.image} alt={`${data.make} ${data.model}`} width="400" height="260" />
+		)}
+		{data.verified && <span class="verified-badge">✓ Verified</span>}
+	</div>
+
+	<header class="card-head">
+		<h3>{data.make} {data.model}{data.year ? ` ${data.year}` : ''}</h3>
+		{data.price != null && <p class="price">{peso(data.price)}</p>}
+	</header>
+
+	{(data.grade || data.mileage) && (
+		<ul class="documentation">
+			{data.grade && (
+				<li><span>Inspection Grade</span><strong>{data.grade}</strong></li>
+			)}
+			{data.mileage && (
+				<li><span>Verified Odometer</span><strong>{data.mileage}</strong></li>
+			)}
+		</ul>
+	)}
+
 	<ul class="spec-list">
 		<li><strong>ENGINE:</strong> {data.engine}</li>
 		<li><strong>TRANS:</strong> {data.transmission}</li>
@@ -33,44 +59,96 @@ const { data } = Astro.props;
 
 <style>
 	.spec-plate {
-		border: 2px solid var(--text-color);
-		padding: 1em; /* Reduced padding */
-		background: #FFF;
+		border: 1px solid var(--line);
+		background: var(--paper);
 		border-radius: 0;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		transition: border-color 0.15s, box-shadow 0.15s;
 	}
-    .image-container {
-        margin-bottom: 0.75em;
-        overflow: hidden;
-    }
-    .image-container img {
-        width: 100%;
-        height: 150px; /* Reduced height */
-        object-fit: cover;
-    }
-	h3 {
-		margin: 0 0 0.75em 0;
-		font-size: 1.2em; /* Smaller title */
+	.spec-plate:hover {
+		border-color: var(--black-mica);
+		box-shadow: 0 6px 18px rgba(17, 24, 39, 0.08);
+	}
+
+	.image-container {
+		position: relative;
+		overflow: hidden;
+	}
+	.image-container img {
+		width: 100%;
+		height: 170px;
+		object-fit: cover;
+		display: block;
+	}
+	.verified-badge {
+		position: absolute;
+		top: 0.6em;
+		left: 0.6em;
+		background: var(--red-mica);
+		color: var(--paper);
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		border-bottom: 2px solid var(--text-color);
-		padding-bottom: 0.25em;
-        min-height: 2em;
+		padding: 0.3em 0.6em;
 	}
+
+	.card-head {
+		padding: 0.85em 0.9em 0.5em;
+	}
+	.card-head h3 {
+		margin: 0;
+		font-size: 1.05rem;
+		text-transform: uppercase;
+		line-height: 1.2;
+	}
+	.price {
+		margin: 0.25em 0 0;
+		font-weight: 700;
+		font-size: 1.1rem;
+		color: var(--black-mica);
+	}
+
+	/* The documentation block — the visible proof that we document machines */
+	.documentation {
+		list-style: none;
+		margin: 0 0.9em;
+		padding: 0.6em 0.75em;
+		background: var(--paper-off);
+		border-left: 3px solid var(--red-mica);
+		display: grid;
+		gap: 0.35em;
+		font-size: 0.78rem;
+	}
+	.documentation li {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.5em;
+	}
+	.documentation span {
+		color: var(--metal-gray);
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+	.documentation strong {
+		font-family: monospace;
+	}
+
 	.spec-list {
 		list-style: none;
-		padding: 0;
+		padding: 0.75em 0.9em 0.9em;
 		margin: 0;
-        margin-top: auto;
+		margin-top: auto;
 	}
 	.spec-list li {
 		margin-bottom: 0.25em;
 		font-family: monospace;
-        font-size: 0.9em; /* Smaller data */
+		font-size: 0.85rem;
 	}
 	.spec-list strong {
-		color: #666;
+		color: var(--metal-gray);
 		margin-right: 0.25em;
 	}
 </style>
