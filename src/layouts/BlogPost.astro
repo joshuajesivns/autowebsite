@@ -15,6 +15,19 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 <html lang="en">
 	<head>
 		<BaseHead title={title} description={description} />
+		<script type="application/ld+json" is:inline set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "BlogPosting",
+			"headline": title,
+			"description": description,
+			"image": heroImage ? new URL(heroImage.src, Astro.url) : undefined,
+			"datePublished": pubDate.toISOString(),
+			"dateModified": (updatedDate || pubDate).toISOString(),
+			"author": {
+				"@type": "Organization",
+				"name": "Apex Engine Editorial Team"
+			}
+		})} />
 		<style>
 			.layout-container {
 				display: grid;
@@ -90,7 +103,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
                         
                         <div class="author-block">
                             <h3>About the Author</h3>
-                            <p>Expert automotive content by SouthShift Editorial Team. Last updated: {updatedDate || pubDate}</p>
+                            <p>Expert automotive content by Apex Engine Editorial Team. Last updated: {updatedDate || pubDate}</p>
                         </div>
                     </div>
                 </section>
