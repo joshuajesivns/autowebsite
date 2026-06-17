@@ -15,70 +15,87 @@ const rl = readline.createInterface({
 
 const question = (query) => new Promise((resolve) => rl.question(query, resolve));
 
-async function main() {
-    console.log("--- Apex Engine Blog Generator ---");
-    
-    const topic = await question("What car or topic is this blog about? ");
-    const keyTakeaway = await question("What is your main 'human' takeaway or verdict? ");
-    const specs = await question("Any specific specs or technical details to include? (optional) ");
+const MODES = {
+    1: {
+        name: "Technical Review",
+        tone: "Analytical, honest, and data-heavy. Focus on 'Documenting the machine'.",
+        requirements: "Include a <VehicleSpecCard /> and a 'Technical Verdict' section.",
+        length: "1,500 - 2,500 words"
+    },
+    2: {
+        name: "Culture Story",
+        tone: "Passionate, evocative, and narrative-driven. Focus on heritage and soul.",
+        requirements: "Focus on storytelling, historical context, and the local Philippine scene.",
+        length: "1,200 - 2,000 words"
+    },
+    3: {
+        name: "How-To Guide",
+        tone: "Instructive, clear, and practical. Focus on safety and efficiency.",
+        requirements: "Include a 'Tools Needed' list. Integrate placeholders for recommended products (Affiliate-ready). Use numbered steps.",
+        length: "800 - 1,500 words"
+    },
+    4: {
+        name: "Market Insight",
+        tone: "Investigative, visionary, and strategic. Focus on EVs, trends, and ROI.",
+        requirements: "Focus on 'Future-proofing', cost-benefit analysis, and upcoming technology.",
+        length: "1,000 - 1,800 words"
+    }
+};
 
-    console.log("\nGenerating your blog draft... Please wait.");
+async function main() {
+    console.log("\n--- 🏎️ Apex Engine Multi-Mode Generator ---");
+    console.log("Select a Mode:");
+    Object.entries(MODES).forEach(([key, mode]) => {
+        console.log(`${key}. ${mode.name} (${mode.tone})`);
+    });
+
+    const modeChoice = await question("\nEnter number (1-4): ");
+    const selectedMode = MODES[modeChoice];
+
+    if (!selectedMode) {
+        console.error("Invalid choice. Exiting.");
+        rl.close();
+        return;
+    }
+
+    const topic = await question(`\n[${selectedMode.name}] What is the specific topic/car? `);
+    const notes = await question("What are your key 'human' insights or personal takeaways? ");
+
+    console.log(`\nGenerating a ${selectedMode.name} draft... This may take a moment for long-form content.`);
 
     const prompt = `
-You are the Lead Editor for Apex Engine, an authoritative automotive blog in the Philippines.
+You are the Lead Editor for Apex Engine, an authoritative automotive platform in the Philippines.
 Our brand promise is: "We don't just list cars, we document machines."
-Our tone is: Technical, honest, transparent, and expert-level. No marketing fluff.
 
-Task: Write a blog post in MDX format for an Astro website.
+MODE: ${selectedMode.name}
+TONE: ${selectedMode.tone}
+LENGTH GOAL: ${selectedMode.length}
+REQUIREMENTS: ${selectedMode.requirements}
 
-Topic: ${topic}
-Human Takeaway/Verdict: ${keyTakeaway}
-Technical Details: ${specs}
+TOPIC: ${topic}
+USER INSIGHTS: ${notes}
 
-Requirements:
-1. Use MDX format.
-2. Include Frontmatter:
-   - title: A punchy, SEO-optimized title.
-   - description: A brief summary for search results.
-   - pubDate: "${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}"
-   - heroImage: "../../assets/blog-placeholder-1.jpg"
-3. Structure:
-   - Start with a strong introduction.
-   - Use the <VehicleSpecCard /> component if the topic is a specific car.
-   - Use Markdown headers (##, ###) for sections.
-   - Include a "Technical Verdict" section.
-4. Style:
-   - Write for a Filipino audience (reference local conditions, LTO, or market trends).
-   - Avoid generic AI phrases like "In the world of...", "Crucial role", "Game changer".
-   - Be specific and evidence-based.
-5. Component Usage:
-   If it's a car review, include this component:
-   <VehicleSpecCard 
-     data={{
-       make: "Make",
-       model: "Model",
-       engine: "Engine",
-       transmission: "Trans",
-       fuel: "Fuel",
-       seats: 5,
-       year: 2024
-     }} 
-   />
-   (Try to fill in as many specs as possible from the provided details or general knowledge).
+Instructions:
+1. Return ONLY the content in MDX format.
+2. Frontmatter: title (SEO-optimized), description, pubDate (current date), heroImage ("../../assets/blog-placeholder-1.jpg").
+3. Use the Apex Engine "Editorial" style:
+   - Use ## for main sections (they get the visual divider).
+   - Use ### for sub-sections.
+   - For How-To Guides: Create a "Recommended Gear" section with placeholders like [Product Name - Affiliate Link Placeholder].
+4. Language: English, but localized for the Philippines (traffic, LTO, local car culture, climate).
+5. No AI fluff (avoid "In the world of...", "Crucial", "Game changer"). Be technical and specific.
 
-Return ONLY the MDX content.
+MDX CONTENT:
 `;
 
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4o", // Using 4o for better technical writing
+            model: "gpt-4o",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
         });
 
         const content = response.choices[0].message.content;
-        
-        // Clean up the output in case AI adds markdown code blocks
         const cleanedContent = content.replace(/^```mdx?\n/, '').replace(/\n```$/, '');
 
         const fileName = topic.toLowerCase().replace(/[^a-z0-9]/g, '-') + '.mdx';
@@ -86,7 +103,7 @@ Return ONLY the MDX content.
 
         fs.writeFileSync(filePath, cleanedContent);
 
-        console.log(`\n✅ Success! Blog post created at: src/content/blog/${fileName}`);
+        console.log(`\n✅ Success! ${selectedMode.name} created at: src/content/blog/${fileName}`);
     } catch (error) {
         console.error("Error generating blog:", error);
     } finally {
