@@ -4,7 +4,7 @@
 import '../styles/apex.css';
 import type { ImageMetadata } from 'astro';
 import FallbackImage from '../assets/blog-placeholder-1.jpg';
-import { SITE_TITLE } from '../consts';
+import { SITE_TITLE, ORG, SOCIAL_LINKS, GA_MEASUREMENT_ID, GOOGLE_SITE_VERIFICATION } from '../consts';
 import { Font } from 'astro:assets';
 
 interface Props {
@@ -14,8 +14,29 @@ interface Props {
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const site = Astro.site?.href ?? canonicalURL.origin + '/';
 
 const { title, description, image = FallbackImage } = Astro.props;
+
+// Site-wide Organization entity — gives search engines + AI Overviews a single
+// authoritative identity (name, logo, NAP, official profiles) to attach trust to.
+const orgSchema = {
+	'@context': 'https://schema.org',
+	'@type': 'Organization',
+	name: SITE_TITLE,
+	url: site,
+	logo: new URL('/favicon.svg', site).href,
+	email: ORG.email,
+	telephone: ORG.telephone,
+	address: {
+		'@type': 'PostalAddress',
+		streetAddress: ORG.streetAddress,
+		addressLocality: ORG.addressLocality,
+		addressRegion: ORG.addressRegion,
+		addressCountry: ORG.addressCountry,
+	},
+	...(SOCIAL_LINKS.length ? { sameAs: SOCIAL_LINKS } : {}),
+};
 ---
 
 <!-- Global Metadata -->
@@ -31,6 +52,13 @@ const { title, description, image = FallbackImage } = Astro.props;
 	href={new URL('rss.xml', Astro.site)}
 />
 <meta name="generator" content={Astro.generator} />
+
+{GOOGLE_SITE_VERIFICATION && (
+	<meta name="google-site-verification" content={GOOGLE_SITE_VERIFICATION} />
+)}
+
+<!-- Organization entity (site-wide) -->
+<script type="application/ld+json" is:inline set:html={JSON.stringify(orgSchema)} />
 
 <Font cssVariable="--font-atkinson" preload />
 
@@ -55,3 +83,11 @@ const { title, description, image = FallbackImage } = Astro.props;
 <meta name="twitter:title" content={title} />
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={new URL(image.src, Astro.url)} />
+
+<!-- Google Analytics 4 (rendered only when GA_MEASUREMENT_ID is set) -->
+{GA_MEASUREMENT_ID && (
+	<>
+		<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}></script>
+		<script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`}></script>
+	</>
+)}
