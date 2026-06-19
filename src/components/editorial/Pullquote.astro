@@ -1,0 +1,41 @@
+---
+/* Pullquote — a large emphasized quote to break up long-form text.
+   The quote is the children; optional `cite` adds an attribution line. */
+interface Props {
+	cite?: string;
+}
+
+const { cite } = Astro.props;
+---
+
+<blockquote class="pullquote">
+	<p><slot /></p>
+	{cite && <cite>— {cite}</cite>}
+</blockquote>
+
+<style>
+	.pullquote {
+		margin: 2em 0;
+		border: none;
+		border-left: 5px solid var(--red-mica);
+		padding: 0.5em 0 0.5em 1.25em;
+		font-size: clamp(1.4rem, 3vw, 1.9rem);
+		line-height: 1.25;
+		font-weight: 700;
+		font-style: normal;
+		color: var(--black-mica);
+		letter-spacing: -0.01em;
+	}
+	.pullquote p {
+		margin: 0;
+	}
+	.pullquote cite {
+		display: block;
+		margin-top: 0.5em;
+		font-size: 0.95rem;
+		font-weight: 600;
+		font-style: normal;
+		color: var(--metal-gray);
+		letter-spacing: 0;
+	}
+</style>

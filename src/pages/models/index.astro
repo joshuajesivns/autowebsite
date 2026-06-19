@@ -1,0 +1,146 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { getCollection } from 'astro:content';
+
+const models = await getCollection('models');
+
+// Group models by make (e.g. Toyota, Nissan)
+const groupedModels = models.reduce((acc, entry) => {
+	const make = entry.data.make;
+	(acc[make] ??= []).push(entry);
+	return acc;
+}, {} as Record<string, typeof models>);
+
+const makes = Object.keys(groupedModels).sort();
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title="Model Catalog & Reviews | Apex Engine" description="Explore technical specifications, buying guides, and dynamic reviews for major automotive makes and models." />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="catalog-section">
+				<div class="header-block">
+					<h1>Model Catalog</h1>
+					<p class="subtitle">Complete technical specification libraries, real-world issues, and buying reviews for enthusiast and commuter machines.</p>
+				</div>
+
+				<div class="makes-grid">
+					{makes.map((make) => (
+						<div class="make-card">
+							<h2>{make}</h2>
+							<ul class="model-links">
+								{groupedModels[make].map((entry) => (
+									<li>
+										<a href={`/models/${entry.id}/`} class="model-link">
+											<span class="model-name">{entry.data.model}</span>
+											<span class="meta">{entry.data.yearsProduced} · {entry.data.bodyType}</span>
+										</a>
+									</li>
+								))}
+							</ul>
+						</div>
+					))}
+				</div>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.catalog-section {
+		padding: 2em 0;
+	}
+	.header-block {
+		border-bottom: 3px solid var(--black-mica);
+		padding-bottom: 1.5em;
+		margin-bottom: 3em;
+	}
+	.header-block h1 {
+		font-size: 3em;
+		text-transform: uppercase;
+		margin: 0;
+	}
+	.subtitle {
+		color: var(--metal-gray);
+		font-size: 1.1rem;
+		margin-top: 0.5em;
+		max-width: 60ch;
+		line-height: 1.5;
+	}
+
+	.makes-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2.5em;
+	}
+	@media (min-width: 768px) {
+		.makes-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (min-width: 1024px) {
+		.makes-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+
+	.make-card {
+		border: 1px solid var(--line);
+		padding: 1.5em;
+		background: var(--paper-off);
+		display: flex;
+		flex-direction: column;
+	}
+	.make-card h2 {
+		text-transform: uppercase;
+		font-size: 1.5rem;
+		border-bottom: 2px solid var(--black-mica);
+		padding-bottom: 0.3em;
+		margin-bottom: 1em;
+	}
+
+	.model-links {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 0.75em;
+	}
+	.model-link {
+		display: flex;
+		flex-direction: column;
+		text-decoration: none;
+		color: inherit;
+		background: var(--paper);
+		border: 1px solid var(--line);
+		padding: 0.85em 1em;
+		transition: border-color 0.15s, box-shadow 0.15s;
+	}
+	.model-link:hover {
+		border-color: var(--accent-color);
+		box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+	}
+	.model-link:hover .model-name {
+		color: var(--accent-color);
+	}
+	.model-name {
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 0.95rem;
+		transition: color 0.15s;
+	}
+	.meta {
+		font-size: 0.75rem;
+		color: var(--metal-gray);
+		margin-top: 0.25em;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+</style>

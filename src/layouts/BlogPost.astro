@@ -63,7 +63,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
                         
                         <div class="author-block">
                             <h3>About the Author</h3>
-                            <p>Expert automotive content by Apex Engine Editorial Team. Last updated: {updatedDate || pubDate}</p>
+                            <p>Expert automotive content by Apex Engine Editorial Team. Last updated: <FormattedDate date={updatedDate || pubDate} /></p>
                         </div>
                     </div>
                 </div>
@@ -143,10 +143,18 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
         max-width: 1200px;
         margin: 0 auto 5em;
         padding: 0 1.5em;
+        /* Drives the <Figure width="full"> breakout. On mobile there's no
+           sidebar, so "full" reaches the container padding edges. */
+        --bleed-left: 1.5em;
+        --bleed-right: 1.5em;
     }
     @media (min-width: 1024px) {
         .layout-container {
             grid-template-columns: 280px 1fr;
+            /* Reclaim the 280px TOC sidebar + 3em gap on the left so a full-width
+               figure spans the whole content row. */
+            --bleed-left: calc(280px + 3em);
+            --bleed-right: 0px;
         }
     }
 
@@ -202,6 +210,48 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 
     :global(.prose p) {
         margin-bottom: 1.5em;
+    }
+
+    /* Base styling for content authored as plain markdown (images, lists,
+       links, rules, quotes). The editorial components override these as needed. */
+    :global(.prose img) {
+        max-width: 100%;
+        height: auto;
+        display: block;
+    }
+    :global(.prose figure) {
+        margin: 2.5em 0;
+    }
+    :global(.prose figcaption) {
+        margin-top: 0.5em;
+        font-size: 0.85rem;
+        color: var(--metal-gray);
+    }
+    :global(.prose ul),
+    :global(.prose ol) {
+        margin: 0 0 1.5em;
+        padding-left: 1.25em;
+        line-height: 1.7;
+    }
+    :global(.prose li) {
+        margin-bottom: 0.5em;
+    }
+    :global(.prose a) {
+        color: var(--red-mica);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+    :global(.prose hr) {
+        border: none;
+        border-top: 1px solid var(--line);
+        margin: 3em 0;
+    }
+    :global(.prose blockquote) {
+        margin: 2em 0;
+        padding-left: 1.25em;
+        border-left: 4px solid var(--line);
+        color: var(--metal-gray);
+        font-style: italic;
     }
 
     .author-block {

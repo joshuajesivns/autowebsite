@@ -63,6 +63,8 @@ async function main() {
 
     console.log(`\nGenerating a ${selectedMode.name} draft... This may take a moment for long-form content.`);
 
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
     const prompt = `
 You are the Lead Editor for Apex Engine, an authoritative automotive platform in the Philippines.
 Our brand promise is: "We don't just list cars, we document machines."
@@ -76,14 +78,24 @@ TOPIC: ${topic}
 USER INSIGHTS: ${notes}
 
 Instructions:
-1. Return ONLY the content in MDX format.
-2. Frontmatter: title (SEO-optimized), description, pubDate (current date), heroImage ("../../assets/blog-placeholder-1.jpg").
-3. Use the Apex Engine "Editorial" style:
-   - Use ## for main sections (they get the visual divider).
-   - Use ### for sub-sections.
-   - For How-To Guides: Create a "Recommended Gear" section with placeholders like [Product Name - Affiliate Link Placeholder].
-4. Language: English, but localized for the Philippines (traffic, LTO, local car culture, climate).
-5. No AI fluff (avoid "In the world of...", "Crucial", "Game changer"). Be technical and specific.
+1. Return ONLY the content in MDX format. Do NOT wrap it in markdown code fences.
+2. Frontmatter (YAML): title (SEO-optimized), description, pubDate ("${today}"), heroImage ("../../assets/blog-placeholder-1.jpg"), and tags (an array of strings matching the car makes or models discussed, e.g., ["Toyota", "Toyota Vios"]).
+3. Immediately after the frontmatter, add these import lines exactly:
+   import { Figure, Split, Gallery, Pullquote } from '../../components/editorial';
+   import img1 from '../../assets/blog-placeholder-2.jpg';
+   import img2 from '../../assets/blog-placeholder-3.jpg';
+   import img3 from '../../assets/blog-placeholder-4.jpg';
+4. Use the Apex Engine "Editorial" style and the component kit to control image placement and visual rhythm:
+   - Use ## for main sections (they get the visual divider) and ### for sub-sections.
+   - Place a <Figure src={img1} width="full" caption="..." credit="Apex Engine" /> near the top of the article.
+   - Use at least one <Split image={img2} side="right">...explanatory text...</Split> to pair an image with analysis (text goes between the tags as normal markdown; alternate side="left"/"right").
+   - Use <Gallery images={[img1, img2, img3]} captions={["...", "...", "..."]} /> once, where showing multiple angles or examples helps.
+   - Use one <Pullquote cite="...">memorable line</Pullquote>.
+   - IMPORTANT: after EVERY image component, add this MDX comment on its own line: {/* TODO: replace placeholder with a real photo in src/assets/blog/ */}
+   - For How-To Guides: also create a "Recommended Gear" section with placeholders like [Product Name - Affiliate Link Placeholder].
+   - For Technical Reviews: also add 'import VehicleSpecCard from "../../components/VehicleSpecCard.astro";' and include one <VehicleSpecCard data={{ ... }} /> plus a "Technical Verdict" section.
+5. Language: English, but localized for the Philippines (traffic, LTO, local car culture, climate).
+6. No AI fluff (avoid "In the world of...", "Crucial", "Game changer"). Be technical and specific.
 
 MDX CONTENT:
 `;

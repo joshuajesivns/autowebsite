@@ -1,0 +1,252 @@
+[
+	{
+		"make": "Toyota",
+		"models": [
+			{
+				"name": "Vios",
+				"generations": "2002 - Present (1st to 4th Gen)",
+				"segment": "Subcompact Sedan",
+				"popularEngines": ["1.3L 2NR-FE I4", "1.5L 1NZ-FE I4", "1.3L 2NZ-FE I4"],
+				"highlights": "The undisputed king of Philippine roads. Renowned for cheap parts, bulletproof reliability, and excellent fuel economy."
+			},
+			{
+				"name": "Corolla Altis",
+				"generations": "1970 - Present (KE70, AE92, AE101, AE111, Altis)",
+				"segment": "Compact Sedan",
+				"popularEngines": ["1.6L 1ZR-FE I4", "1.8L 2ZR-FE Hybrid", "1.6L 4A-FE I4"],
+				"highlights": "From the vintage rear-wheel-drive KE70 to the modern Altis Hybrid, the Corolla is the historical daily commuter benchmark."
+			},
+			{
+				"name": "Innova",
+				"generations": "2004 - Present (1st to 2nd Gen, Zenix)",
+				"segment": "MPV",
+				"popularEngines": ["2.8L 1GD-FTV Diesel", "2.5L 2KD-FTV Diesel", "2.0L 1TR-FE Gasoline"],
+				"highlights": "The classic Filipino family transporter. Highly valued for its rugged diesel engine, body-on-frame durability, and 7-seat capacity."
+			},
+			{
+				"name": "Avanza",
+				"generations": "2003 - Present (1st to 3rd Gen)",
+				"segment": "Compact MPV",
+				"popularEngines": ["1.3L 1NR-VE I4", "1.5L 2NR-VE I4"],
+				"highlights": "A compact, highly fuel-efficient 7-seater popular with ride-sharing, small businesses, and urban families."
+			},
+			{
+				"name": "Wigo",
+				"generations": "2014 - Present (1st to 2nd Gen)",
+				"segment": "Hatchback",
+				"popularEngines": ["1.0L 1KR-VE I3"],
+				"highlights": "An ultra-compact entry-level hatchback offering great maneuvering in Manila traffic and over 18 km/L fuel mileage."
+			},
+			{
+				"name": "Fortuner",
+				"generations": "2005 - Present (1st to 2nd Gen)",
+				"segment": "Mid-size SUV",
+				"popularEngines": ["2.4L 2GD-FTV Diesel", "2.8L 1GD-FTV Diesel", "2.7L 2TR-FE Gasoline"],
+				"highlights": "The best-selling mid-size SUV in the country, appreciated for its high ground clearance and aggressive styling."
+			},
+			{
+				"name": "Hilux",
+				"generations": "1970 - Present (4th to 8th Gen)",
+				"segment": "Pickup Truck",
+				"popularEngines": ["2.4L 2GD-FTV Diesel", "2.8L 1GD-FTV Diesel"],
+				"highlights": "A workhorse pickup truck trusted by businesses and off-roaders alike for durability and load-carrying capacity."
+			}
+		]
+	},
+	{
+		"make": "Mitsubishi",
+		"models": [
+			{
+				"name": "Mirage G4",
+				"generations": "2013 - Present",
+				"segment": "Subcompact Sedan",
+				"popularEngines": ["1.2L 3A92 I3"],
+				"highlights": "Locally manufactured under the CARS program. Extremely popular for Grab drivers due to its small footprint and 3-cylinder efficiency."
+			},
+			{
+				"name": "Xpander",
+				"generations": "2018 - Present",
+				"segment": "Compact MPV",
+				"popularEngines": ["1.5L 4A91 I4"],
+				"highlights": "A stylish, high-ground-clearance family crossover-MPV that has become a best-seller for city commuting."
+			},
+			{
+				"name": "Lancer",
+				"generations": "1973 - 2017 (Singkit, Pizza Pie, Cedia, EX)",
+				"segment": "Compact Sedan",
+				"popularEngines": ["1.6L 4G92 I4", "1.5L 4G15 I4", "2.0L 4B11 I4"],
+				"highlights": "A legendary sportier alternative to the Corolla. Legacy models remain highly popular second-hand project daily cars."
+			},
+			{
+				"name": "Montero Sport",
+				"generations": "2008 - Present (1st to 3rd Gen)",
+				"segment": "Mid-size SUV",
+				"popularEngines": ["2.4L 4N15 MIVEC Diesel", "2.5L 4D56 DI-D Diesel"],
+				"highlights": "A major Fortuner competitor. Beloved for its comfortable coil-spring rear suspension and highly responsive MIVEC diesel engine."
+			},
+			{
+				"name": "L300",
+				"generations": "1987 - Present (L300 Versa Van, FB Body)",
+				"segment": "Utility Van",
+				"popularEngines": ["2.2L 4N14 Diesel", "2.5L 4D56 Diesel"],
+				"highlights": "The legendary commercial workhorse. Found in almost every delivery fleet and utility route across the country."
+			},
+			{
+				"name": "Adventure",
+				"generations": "1997 - 2017",
+				"segment": "AUV",
+				"popularEngines": ["2.5L 4D56 Non-Turbo Diesel"],
+				"highlights": "A classic Asian Utility Vehicle (AUV) that transported generations of Filipino students and workers. Indestructible engine."
+			}
+		]
+	},
+	{
+		"make": "Honda",
+		"models": [
+			{
+				"name": "City",
+				"generations": "1996 - Present (3rd to 7th Gen)",
+				"segment": "Subcompact Sedan",
+				"popularEngines": ["1.5L L15B I4", "1.5L i-VTEC L15A I4"],
+				"highlights": "A premium subcompact option. Known for spirited i-VTEC engine response, smooth CVT drivability, and spacious cabin layout."
+			},
+			{
+				"name": "Civic",
+				"generations": "1972 - Present (EG, EK, ES, FD, FB, FC, FE)",
+				"segment": "Compact Sedan",
+				"popularEngines": ["1.5L VTEC Turbo", "1.8L R18A I4", "1.6L D16 I4"],
+				"highlights": "The darling of the enthusiast daily driver. The FD generation (1.8 VTEC) and FC turbo models are highly sought after second-hand."
+			},
+			{
+				"name": "Brio",
+				"generations": "2011 - Present",
+				"segment": "Hatchback",
+				"popularEngines": ["1.2L L12B I4"],
+				"highlights": "Honda's smallest offering, combining zippy handling with excellent fuel economy and premium hatchback interior feel."
+			},
+			{
+				"name": "CR-V",
+				"generations": "1995 - Present (1st to 6th Gen)",
+				"segment": "Compact SUV",
+				"popularEngines": ["1.6L i-DTEC Diesel", "2.0L i-VTEC Gasoline", "1.5L VTEC Turbo"],
+				"highlights": "A comfortable, passenger-car-like SUV. Early generations are common budget family runabouts; newer models offer 7 seats."
+			},
+			{
+				"name": "BR-V",
+				"generations": "2016 - Present",
+				"segment": "Subcompact SUV / Crossover",
+				"popularEngines": ["1.5L L15Z I4"],
+				"highlights": "A 7-seater crossover that blends SUV high ride height with Honda's car-like driving dynamics."
+			}
+		]
+	},
+	{
+		"make": "Nissan",
+		"models": [
+			{
+				"name": "Almera",
+				"generations": "2011 - Present",
+				"segment": "Subcompact Sedan",
+				"popularEngines": ["1.0L HRA0 Turbo I3", "1.5L HR15DE I4"],
+				"highlights": "Lauded for class-leading rear legroom and trunk space. The newer turbo generation adds modern styling and fuel gains."
+			},
+			{
+				"name": "Sentra",
+				"generations": "1982 - 2014 (B13, B14, N16, Sylphy)",
+				"segment": "Compact Sedan",
+				"popularEngines": ["1.6L GA16DE I4", "1.3L GA13DS I4", "1.6L QG16DE I4"],
+				"highlights": "The B13 generation (Sentra LEC) is legendary in the Philippines as an indestructible, cheap-to-run first car for college students."
+			},
+			{
+				"name": "Navara",
+				"generations": "1997 - Present (D22, D40, D23)",
+				"segment": "Pickup Truck",
+				"popularEngines": ["2.5L YD25DDTi Diesel"],
+				"highlights": "Famous for its coil-spring rear multi-link suspension, which offers the most comfortable, car-like ride of any pickup in PH."
+			}
+		]
+	},
+	{
+		"make": "Hyundai",
+		"models": [
+			{
+				"name": "Accent",
+				"generations": "1994 - 2022",
+				"segment": "Subcompact Sedan / Hatch",
+				"popularEngines": ["1.6L U2 CRDi Diesel", "1.4L Kappa Gasoline"],
+				"highlights": "The U2 CRDi diesel hatchback/sedan variant is legendary in the Philippines. High torque, cheap fuel costs, and massive mileage capacity."
+			},
+			{
+				"name": "Grand Starex",
+				"generations": "1997 - 2021",
+				"segment": "Family / Commercial Van",
+				"popularEngines": ["2.5L CRDi Diesel"],
+				"highlights": "The default choice for executive vans, school shuttles, and large family road trips across provinces."
+			},
+			{
+				"name": "Tucson",
+				"generations": "2004 - Present (1st to 4th Gen)",
+				"segment": "Compact SUV",
+				"popularEngines": ["2.0L CRDi Diesel", "2.0L Nu Gasoline"],
+				"highlights": "A highly successful compact SUV offering refined styling and an efficient diesel drivetrain option."
+			}
+		]
+	},
+	{
+		"make": "Kia",
+		"models": [
+			{
+				"name": "Soluto",
+				"generations": "2019 - Present",
+				"segment": "Subcompact Sedan",
+				"popularEngines": ["1.4L Dual-CVVT Kappa I4"],
+				"highlights": "An affordable, entry-level commuter sedan equipped with modern infotainment and low running costs."
+			},
+			{
+				"name": "Picanto",
+				"generations": "2004 - Present (1st to 3rd Gen)",
+				"segment": "Hatchback",
+				"popularEngines": ["1.0L Kappa I3", "1.2L Kappa I4"],
+				"highlights": "A stylish, nimble city runabout perfect for daily commutes through tight barangay streets and narrow lanes."
+			}
+		]
+	},
+	{
+		"make": "Ford",
+		"models": [
+			{
+				"name": "Ranger",
+				"generations": "1998 - Present (T6, Next-Gen)",
+				"segment": "Pickup Truck",
+				"popularEngines": ["2.0L Bi-Turbo EcoBlue Diesel", "2.2L Duratorq Diesel"],
+				"highlights": "Highly popular for its bold American-truck looks, advanced tech features, and wild Ranger Raptor variants."
+			},
+			{
+				"name": "Everest",
+				"generations": "2003 - Present (1st to 3rd Gen)",
+				"segment": "Mid-size SUV",
+				"popularEngines": ["2.0L Bi-Turbo Diesel", "3.2L Duratorq Diesel", "2.2L Duratorq Diesel"],
+				"highlights": "A pickup-platform SUV that competes heavily with Fortuner. Famous for advanced driver safety aids and premium cabin tech."
+			}
+		]
+	},
+	{
+		"make": "Geely",
+		"models": [
+			{
+				"name": "Coolray",
+				"generations": "2019 - Present",
+				"segment": "Subcompact Crossover",
+				"popularEngines": ["1.5L Turbocharged 3-Cylinder"],
+				"highlights": "The vehicle that spearheaded Chinese brand adoption in the PH. Known for aggressive styling, high tech features, and fast acceleration."
+			},
+			{
+				"name": "Okavango",
+				"generations": "2020 - Present",
+				"segment": "Mid-size Crossover / MPV",
+				"popularEngines": ["1.5L Turbo Hybrid (48V MHEV)"],
+				"highlights": "A massive, value-packed 7-seater utilizing mild-hybrid technology to provide competitive fuel economy for its scale."
+			}
+		]
+	}
+]

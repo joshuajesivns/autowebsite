@@ -1,42 +1,41 @@
 ---
 import { Image } from 'astro:assets';
+import type { Listing } from '../data/listings';
 
 /* Future listing-card contract. Core specs are required; the transparency
    fields (verified / grade / mileage / price) are what set Apex Engine apart
    from a basic spec dump — populate them for every real listing. */
 interface Props {
-	data: {
-		make: string;
-		model: string;
-		year?: number;
-		engine: string;
-		transmission: string;
-		fuel: string;
-		seats: number;
-		mileage?: string;    // verified odometer, e.g. "48,000 km"
-		grade?: string;      // auction / inspection grade, e.g. "4.5 / B"
-		price?: number;      // PHP
-		verified?: boolean;  // passed in-house technical audit
-		image?: any;
-	};
+	data: Listing;
 }
 
 const { data } = Astro.props;
 const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
 ---
 
-<article class="spec-plate">
-	<div class="image-container">
-		{data.image && (
-			<Image src={data.image} alt={`${data.make} ${data.model}`} width="400" height="260" />
-		)}
-		{data.verified && <span class="verified-badge">✓ Verified</span>}
-	</div>
+<article class={`spec-plate ${data.status === 'sold' ? 'sold-out' : ''}`}>
+	<a href={`/listings/${data.id}`} class="card-link" aria-label={`View details for ${data.make} ${data.model}`}>
+		<div class="image-container">
+			{data.image && (
+				<Image src={data.image} alt={`${data.make} ${data.model}`} width="400" height="260" />
+			)}
+			{data.verified && <span class="verified-badge">✓ Verified</span>}
+			{data.status === 'sold' && <span class="sold-badge">Sold</span>}
+		</div>
 
-	<header class="card-head">
-		<h3>{data.make} {data.model}{data.year ? ` ${data.year}` : ''}</h3>
-		{data.price != null && <p class="price">{peso(data.price)}</p>}
-	</header>
+		<header class="card-head">
+			<h3>{data.make} {data.model}{data.year ? ` ${data.year}` : ''}</h3>
+			{data.price != null && (
+				<p class="price">
+					{data.status === 'sold' ? (
+						<span class="sold-text">SOLD</span>
+					) : (
+						peso(data.price)
+					)}
+				</p>
+			)}
+		</header>
+	</a>
 
 	{(data.grade || data.mileage) && (
 		<ul class="documentation">
@@ -64,11 +63,28 @@ const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
 		border-radius: 0;
 		display: flex;
 		flex-direction: column;
-		transition: border-color 0.15s, box-shadow 0.15s;
+		transition: border-color 0.15s, box-shadow 0.15s, opacity 0.15s;
+		position: relative;
 	}
 	.spec-plate:hover {
 		border-color: var(--black-mica);
 		box-shadow: 0 6px 18px rgba(17, 24, 39, 0.08);
+	}
+	.spec-plate.sold-out {
+		border-color: var(--line);
+	}
+	.spec-plate.sold-out .image-container img {
+		filter: grayscale(80%) contrast(90%);
+		opacity: 0.85;
+	}
+
+	.card-link {
+		text-decoration: none;
+		color: inherit;
+		display: block;
+	}
+	.card-link:hover h3 {
+		color: var(--accent-color);
 	}
 
 	.image-container {
@@ -92,6 +108,20 @@ const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		padding: 0.3em 0.6em;
+		z-index: 2;
+	}
+	.sold-badge {
+		position: absolute;
+		top: 0.6em;
+		right: 0.6em;
+		background: var(--metal-gray);
+		color: var(--paper);
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 0.3em 0.6em;
+		z-index: 2;
 	}
 
 	.card-head {
@@ -102,12 +132,19 @@ const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
 		font-size: 1.05rem;
 		text-transform: uppercase;
 		line-height: 1.2;
+		transition: color 0.15s;
 	}
 	.price {
 		margin: 0.25em 0 0;
 		font-weight: 700;
 		font-size: 1.1rem;
 		color: var(--black-mica);
+	}
+	.sold-text {
+		color: var(--metal-gray);
+		font-weight: 700;
+		font-size: 0.95rem;
+		letter-spacing: 0.05em;
 	}
 
 	/* The documentation block — the visible proof that we document machines */
@@ -120,6 +157,9 @@ const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
 		display: grid;
 		gap: 0.35em;
 		font-size: 0.78rem;
+	}
+	.spec-plate.sold-out .documentation {
+		border-left-color: var(--metal-gray-light);
 	}
 	.documentation li {
 		display: flex;

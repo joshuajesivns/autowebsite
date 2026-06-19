@@ -1,0 +1,652 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import VehicleSpecCard from '../../components/VehicleSpecCard.astro';
+import { Image } from 'astro:assets';
+import { listings } from '../../data/listings';
+
+export async function getStaticPaths() {
+	return listings.map((item) => ({
+		params: { slug: item.id },
+		props: { car: item },
+	}));
+}
+
+const { car } = Astro.props;
+const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
+
+// Find similar/recommended active listings
+const recommendations = listings
+	.filter((item) => item.id !== car.id && item.status === 'available')
+	.slice(0, 3);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`${car.year} ${car.make} ${car.model} | Apex Engine`} description={car.description} image={car.image} />
+		<script type="application/ld+json" is:inline set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "Product",
+			"name": `${car.year} ${car.make} ${car.model}`,
+			"image": car.image.src,
+			"description": car.description,
+			"offers": {
+				"@type": "Offer",
+				"price": car.price,
+				"priceCurrency": "PHP",
+				"availability": car.status === 'available' ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+			}
+		})} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="breadcrumb">
+				<a href="/listings" class="back-link">← Back to Inventory</a>
+			</div>
+
+			<div class="detail-container">
+				<!-- Photo Gallery Section -->
+				<section class="gallery-section">
+					<div class="gallery-main-wrapper">
+						<Image
+							id="active-gallery-image"
+							src={car.images[0] || car.image}
+							alt={`${car.make} ${car.model}`}
+							width={800}
+							height={480}
+							class="gallery-main-img"
+						/>
+						{car.status === 'sold' && <div class="sold-overlay">SOLD OUT</div>}
+					</div>
+
+					{car.images.length > 1 && (
+						<div class="gallery-thumbs">
+							{car.images.map((img, idx) => (
+								<button
+									class={`thumb-btn ${idx === 0 ? 'active' : ''}`}
+									data-src={img.src}
+									data-srcset={img.srcSet?.values ? img.srcSet.attribute : ''}
+									aria-label={`View photo ${idx + 1}`}
+								>
+									<Image src={img} alt={`Thumbnail ${idx + 1}`} width={120} height={80} class="thumb-img" />
+								</button>
+							))}
+						</div>
+					)}
+				</section>
+
+				<!-- Unit Details and CTA Form -->
+				<section class="details-section">
+					<div class="meta-header">
+						{car.verified && <span class="badge badge-verified">✓ Verified Unit</span>}
+						<span class={`badge ${car.status === 'available' ? 'badge-available' : 'badge-sold'}`}>
+							{car.status === 'available' ? 'Available' : 'Sold Out'}
+						</span>
+					</div>
+
+					<h1>{car.make} {car.model}</h1>
+					<p class="car-year-ref">{car.year} · Ref ID: AE-{car.id.slice(0, 4).toUpperCase()}</p>
+
+					<p class="price-tag">
+						{car.status === 'sold' ? (
+							<span class="sold-price">Sold Archive</span>
+						) : (
+							peso(car.price)
+						)}
+					</p>
+
+					<p class="description">{car.description}</p>
+
+					<!-- Key Highlights -->
+					<div class="highlights-grid">
+						<div class="highlight-item">
+							<span>Inspection Grade</span>
+							<strong>{car.grade}</strong>
+						</div>
+						<div class="highlight-item">
+							<span>Verified Odometer</span>
+							<strong>{car.mileage}</strong>
+						</div>
+					</div>
+
+					<!-- Form Container -->
+					<div class="form-container">
+						{car.status === 'available' ? (
+							<h3>Inquire About This Unit</h3>
+							<p class="form-sub">Submit your contact info to request availability, payment terms, or schedule an inspection.</p>
+							<form id="inquiry-form" class="inquiry-form">
+								<input type="hidden" name="unit" value={`${car.year} ${car.make} ${car.model}`} />
+								<div class="form-group">
+									<label for="name">Full Name</label>
+									<input type="text" id="name" name="name" required placeholder="Juan dela Cruz" />
+								</div>
+								<div class="form-group">
+									<label for="email">Email Address</label>
+									<input type="email" id="email" name="email" required placeholder="juan@gmail.com" />
+								</div>
+								<div class="form-group">
+									<label for="message">Message</label>
+									<textarea id="message" name="message" rows="4" required>Hi, I am interested in the JDM spec {car.year} {car.make} {car.model} ({car.mileage}, Grade {car.grade}). Please send details on availability and LTO clearance status.</textarea>
+								</div>
+								<button type="submit" class="primary w-full">Send Inquiry</button>
+							</form>
+							<div id="inquiry-success" class="success-message" hidden>
+								<h4>Inquiry Sent Successfully!</h4>
+								<p>Our technical sales team will contact you within 24 hours with the inspection checklist and import compliance documents.</p>
+							</div>
+						) : (
+							<div class="sold-cta-box">
+								<h3>This machine has been sold.</h3>
+								<p>We source JDM imports continuously. Click below to browse similar high-grade vehicles in our current inventory.</p>
+								<a href="/listings" class="button primary block text-center">Browse Active Inventory</a>
+							</div>
+						)}
+					</div>
+				</section>
+			</div>
+
+			<!-- Technical Documentation and Audit -->
+			<section class="audit-section">
+				<h2>The Technical Audit (Apex Guarantee)</h2>
+				<p class="audit-sub">We don't just sell cars; we document machines. Every vehicle in our stable undergoes an exhaustive technical inspection.</p>
+
+				<div class="audit-grid">
+					<div class="audit-card">
+						<h4>Odometer Verification</h4>
+						<p>Independent log review and dash console verification matching auction sheets. Guaranteed zero rollback.</p>
+						<span class="audit-status">✓ PASSED AUDIT</span>
+					</div>
+					<div class="audit-card">
+						<h4>Chassis & Structural Grade</h4>
+						<p>Ultrasonic paint thickness checks and endoscope inspections of chassis rails to ensure structural integrity.</p>
+						<span class="audit-status">✓ PASSED AUDIT</span>
+					</div>
+					<div class="audit-card">
+						<h4>Mechanical Condition</h4>
+						<p>Compression logs, gearbox synchro wear analyses, and diagnostics of standard cooling/oil pressure lines.</p>
+						<span class="audit-status">✓ PASSED AUDIT</span>
+					</div>
+					<div class="audit-card">
+						<h4>LTO & Customs Clearance</h4>
+						<p>100% legal import documentation. Clearance from Bureau of Customs (BOC) and Land Transportation Office (LTO).</p>
+						<span class="audit-status">✓ PASSED AUDIT</span>
+					</div>
+				</div>
+
+				<table class="spec-table">
+					<caption>Detailed Specifications Sheet</caption>
+					<tbody>
+						<tr>
+							<th>Engine Code</th>
+							<td>{car.engine}</td>
+							<th>Transmission</th>
+							<td>{car.transmission}</td>
+						</tr>
+						<tr>
+							<th>Fuel Type</th>
+							<td>{car.fuel}</td>
+							<th>Seating Capacity</th>
+							<td>{car.seats} Seats</td>
+						</tr>
+						<tr>
+							<th>Year Model</th>
+							<td>{car.year}</td>
+							<th>Import Clearance</th>
+							<td>100% Tax Paid & Registered</td>
+						</tr>
+						<tr>
+							<th>Auction Grade</th>
+							<td>{car.grade}</td>
+							<th>Odometer Status</th>
+							<td>{car.mileage} (Verified)</td>
+						</tr>
+					</tbody>
+				</table>
+			</section>
+
+			<!-- Recommendations Section -->
+			{recommendations.length > 0 && (
+				<section class="recommendations-section">
+					<h2>Similar Active Listings</h2>
+					<div class="listings-grid">
+						{recommendations.map((item) => (
+							<VehicleSpecCard data={item} />
+						))}
+					</div>
+				</section>
+			)}
+		</main>
+		<Footer />
+
+		<script>
+			// Gallery interactivity
+			const mainImg = document.getElementById('active-gallery-image') as HTMLImageElement;
+			const thumbs = document.querySelectorAll('.thumb-btn');
+
+			thumbs.forEach((thumb) => {
+				thumb.addEventListener('click', () => {
+					// Remove active states
+					thumbs.forEach((t) => t.classList.remove('active'));
+					thumb.classList.add('active');
+
+					// Swap image sources
+					const newSrc = thumb.getAttribute('data-src');
+					const newSrcset = thumb.getAttribute('data-srcset');
+
+					if (mainImg && newSrc) {
+						mainImg.src = newSrc;
+						if (newSrcset) {
+							mainImg.srcset = newSrcset;
+						} else {
+							mainImg.removeAttribute('srcset');
+						}
+					}
+				});
+			});
+
+			// Form submission feedback
+			const form = document.getElementById('inquiry-form');
+			const successBox = document.getElementById('inquiry-success');
+
+			if (form && successBox) {
+				form.addEventListener('submit', (e) => {
+					e.preventDefault();
+					form.setAttribute('hidden', 'true');
+					successBox.removeAttribute('hidden');
+				});
+			}
+		</script>
+	</body>
+</html>
+
+<style>
+	.breadcrumb {
+		margin-bottom: 1.5em;
+	}
+	.back-link {
+		display: inline-flex;
+		align-items: center;
+		color: var(--metal-gray);
+		text-decoration: none;
+		font-weight: 700;
+		font-size: 0.9rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.back-link:hover {
+		color: var(--accent-color);
+	}
+
+	.detail-container {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 3em;
+		margin-bottom: 4em;
+	}
+
+	@media (min-width: 900px) {
+		.detail-container {
+			grid-template-columns: 1.2fr 1fr;
+		}
+	}
+
+	/* Gallery Styles */
+	.gallery-section {
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
+	}
+	.gallery-main-wrapper {
+		position: relative;
+		border: 1px solid var(--line);
+		overflow: hidden;
+		background: var(--paper-off);
+		width: 100%;
+		aspect-ratio: 1.6 / 1;
+	}
+	.gallery-main-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+	.sold-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(17, 24, 39, 0.7);
+		color: var(--paper);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 3rem;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		z-index: 5;
+		backdrop-filter: blur(2px);
+	}
+	.gallery-thumbs {
+		display: flex;
+		gap: 0.75em;
+		overflow-x: auto;
+		padding-bottom: 0.5em;
+	}
+	.thumb-btn {
+		background: none;
+		border: 2px solid var(--line);
+		padding: 0;
+		cursor: pointer;
+		opacity: 0.6;
+		transition: opacity 0.15s, border-color 0.15s;
+		flex-shrink: 0;
+		width: 90px;
+		height: 60px;
+	}
+	.thumb-btn:hover,
+	.thumb-btn.active {
+		opacity: 1;
+		border-color: var(--accent-color);
+	}
+	.thumb-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	/* Details & Call to Action */
+	.details-section {
+		display: flex;
+		flex-direction: column;
+	}
+	.meta-header {
+		display: flex;
+		gap: 0.75em;
+		margin-bottom: 0.75em;
+	}
+	.badge {
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 0.3em 0.6em;
+	}
+	.badge-verified {
+		background: var(--red-mica);
+		color: var(--paper);
+	}
+	.badge-available {
+		background: var(--black-mica);
+		color: var(--paper);
+	}
+	.badge-sold {
+		background: var(--metal-gray);
+		color: var(--paper);
+	}
+
+	.details-section h1 {
+		font-size: 2.5em;
+		margin-bottom: 0.1em;
+		text-transform: uppercase;
+	}
+	.car-year-ref {
+		color: var(--metal-gray);
+		font-size: 0.9rem;
+		margin-bottom: 1em;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.price-tag {
+		font-size: 2rem;
+		font-weight: 900;
+		color: var(--black-mica);
+		margin-bottom: 0.75em;
+	}
+	.sold-price {
+		color: var(--metal-gray);
+		font-weight: 700;
+	}
+	.description {
+		margin-bottom: 1.5em;
+		font-size: 1.05rem;
+		line-height: 1.6;
+		color: rgba(17, 24, 39, 0.85);
+	}
+	.highlights-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1em;
+		background: var(--paper-off);
+		padding: 1em;
+		margin-bottom: 1.5em;
+		border-left: 4px solid var(--accent-color);
+	}
+	.highlight-item {
+		display: flex;
+		flex-direction: column;
+	}
+	.highlight-item span {
+		font-size: 0.75rem;
+		color: var(--metal-gray);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.highlight-item strong {
+		font-size: 1.25rem;
+		font-family: monospace;
+	}
+
+	/* Inquiry Form */
+	.form-container {
+		border: 1px solid var(--line);
+		padding: 1.5em;
+		background: var(--paper);
+	}
+	.form-container h3 {
+		font-size: 1.25rem;
+		text-transform: uppercase;
+		margin-bottom: 0.25em;
+	}
+	.form-sub {
+		font-size: 0.85rem;
+		color: var(--metal-gray);
+		margin-bottom: 1.25em;
+	}
+	.inquiry-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3em;
+	}
+	.form-group label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.form-group input,
+	.form-group textarea {
+		padding: 0.75em;
+		border: 1px solid var(--metal-gray-light);
+		font-family: inherit;
+		font-size: 0.95rem;
+		background: var(--paper);
+	}
+	.form-group input:focus-visible,
+	.form-group textarea:focus-visible {
+		outline: 2px solid var(--accent-color);
+	}
+	.w-full {
+		width: 100%;
+	}
+	.success-message {
+		text-align: center;
+		padding: 1em;
+		background: #ECFDF5;
+		border: 1px solid #10B981;
+		color: #065F46;
+	}
+	.success-message h4 {
+		margin-bottom: 0.5em;
+		color: #065F46;
+	}
+	.success-message p {
+		font-size: 0.9rem;
+		margin: 0;
+	}
+	.sold-cta-box {
+		text-align: center;
+		padding: 1em;
+	}
+	.sold-cta-box h3 {
+		color: var(--metal-gray);
+	}
+	.sold-cta-box p {
+		margin-bottom: 1.5em;
+		font-size: 0.9rem;
+	}
+	.button.primary.block {
+		display: block;
+		text-decoration: none;
+	}
+
+	/* Audit & Tech Specs */
+	.audit-section {
+		border-top: 1px solid var(--line);
+		padding-top: 3em;
+		margin-bottom: 4em;
+	}
+	.audit-section h2 {
+		text-transform: uppercase;
+		margin-bottom: 0.25em;
+	}
+	.audit-sub {
+		color: var(--metal-gray);
+		margin-bottom: 2em;
+	}
+	.audit-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.5em;
+		margin-bottom: 3em;
+	}
+	@media (min-width: 600px) {
+		.audit-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (min-width: 900px) {
+		.audit-grid {
+			grid-template-columns: repeat(4, 1fr);
+		}
+	}
+	.audit-card {
+		border: 1px solid var(--line);
+		padding: 1.5em;
+		background: var(--paper-off);
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+	}
+	.audit-card h4 {
+		text-transform: uppercase;
+		font-size: 1rem;
+		margin-bottom: 0.5em;
+	}
+	.audit-card p {
+		font-size: 0.85rem;
+		color: var(--metal-gray);
+		margin-bottom: 1em;
+		line-height: 1.5;
+	}
+	.audit-status {
+		font-family: monospace;
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: #059669;
+		letter-spacing: 0.05em;
+	}
+
+	.spec-table {
+		width: 100%;
+		border-collapse: collapse;
+		margin-top: 2em;
+	}
+	.spec-table caption {
+		text-align: left;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-size: 0.9rem;
+		padding: 0.5em 0;
+		color: var(--metal-gray);
+		border-bottom: 2px solid var(--black-mica);
+	}
+	.spec-table th,
+	.spec-table td {
+		padding: 1em;
+		border-bottom: 1px solid var(--line);
+		text-align: left;
+		font-size: 0.9rem;
+	}
+	.spec-table th {
+		background: var(--paper-off);
+		font-weight: 700;
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		color: var(--metal-gray);
+		width: 20%;
+	}
+	.spec-table td {
+		width: 30%;
+		font-family: monospace;
+	}
+
+	@media (max-width: 768px) {
+		.spec-table, .spec-table tbody, .spec-table tr, .spec-table th, .spec-table td {
+			display: block;
+			width: 100%;
+		}
+		.spec-table th {
+			background: none;
+			padding-bottom: 0.25em;
+			border-bottom: none;
+		}
+		.spec-table td {
+			padding-top: 0.25em;
+			border-bottom: 1px solid var(--line);
+		}
+	}
+
+	/* Recommendations Section */
+	.recommendations-section {
+		border-top: 1px solid var(--line);
+		padding-top: 3em;
+	}
+	.recommendations-section h2 {
+		text-transform: uppercase;
+		margin-bottom: 1.5em;
+	}
+	.listings-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2em;
+	}
+	@media (min-width: 600px) {
+		.listings-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (min-width: 900px) {
+		.listings-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+</style>

@@ -4,7 +4,7 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import VehicleSpecCard from '../components/VehicleSpecCard.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import { listings } from '../data/listings';
+import { listings, makes, modelsByMake, CATEGORIES } from '../data/listings';
 ---
 
 <!doctype html>
@@ -15,8 +15,46 @@ import { listings } from '../data/listings';
 	<body>
 		<Header />
 		<main>
-			<section>
+			<section class="listings-section">
 				<h1>Inventory</h1>
+
+				<!-- Inline Filter Panel -->
+				<div class="filter-panel">
+					<form id="filter-form" class="filter-form" action="/listings" method="get">
+						<div class="field">
+							<label for="filter-category">Category</label>
+							<select id="filter-category" name="category">
+								<option value="">All Categories</option>
+								{CATEGORIES.map((c) => <option value={c.slug}>{c.label}</option>)}
+							</select>
+						</div>
+						<div class="field">
+							<label for="filter-make">Make</label>
+							<select id="filter-make" name="make">
+								<option value="">All Makes</option>
+								{makes.map((m) => <option value={m.toLowerCase()}>{m}</option>)}
+							</select>
+						</div>
+						<div class="field">
+							<label for="filter-model">Model</label>
+							<select id="filter-model" name="model" disabled>
+								<option value="">All Models</option>
+							</select>
+						</div>
+						<div class="field">
+							<label for="filter-budget">Max Budget</label>
+							<select id="filter-budget" name="budget">
+								<option value="">No Budget Limit</option>
+								<option value="500000">Under ₱500k</option>
+								<option value="1000000">Under ₱1M</option>
+								<option value="2000000">Under ₱2M</option>
+								<option value="5000000">Under ₱5M</option>
+							</select>
+						</div>
+						<button type="submit" class="primary">Apply Filters</button>
+					</form>
+				</div>
+
 				<p id="results-bar" class="results-bar" aria-live="polite"></p>
 
 				<div class="grid">
@@ -25,6 +63,7 @@ import { listings } from '../data/listings';
 							class="listing-item"
 							data-make={item.make.toLowerCase()}
 							data-model={item.model.toLowerCase()}
+							data-category={item.category}
 							data-price={item.price}
 						>
 							<VehicleSpecCard data={item} />
@@ -33,46 +72,126 @@ import { listings } from '../data/listings';
 				</div>
 
 				<p id="empty-state" class="empty-state" hidden>
-					No cars match your filters. <a href="/listings">Reset</a>
+					No cars match your filters. <a href="/listings">Reset Filters</a>
 				</p>
 			</section>
 		</main>
 		<Footer />
 
-		<script>
+		<script define:vars={{ modelsByMake }}>
 			// Static-site friendly: filter the rendered listings from the URL query.
 			const params = new URLSearchParams(location.search);
+			const fCategory = (params.get('category') || '').toLowerCase();
 			const fMake = (params.get('make') || '').toLowerCase();
 			const fModel = (params.get('model') || '').toLowerCase();
 			const fBudget = Number(params.get('budget') || 0);
 
-			const items = Array.from(document.querySelectorAll<HTMLElement>('.listing-item'));
+			// Populate dropdown selections on load
+			const categorySel = document.getElementById('filter-category');
+			const makeSel = document.getElementById('filter-make');
+			const modelSel = document.getElementById('filter-model');
+			const budgetSel = document.getElementById('filter-budget');
+
+			if (categorySel) categorySel.value = fCategory;
+			if (makeSel) makeSel.value = fMake;
+			if (budgetSel) budgetSel.value = fBudget ? String(fBudget) : '';
+
+			function fillModels() {
+				const makeVal = makeSel.value;
+				const models = modelsByMake[makeVal] || [];
+				modelSel.innerHTML =
+					'<option value="">All Models</option>' +
+					models.map((m) => `<option value="${m.toLowerCase()}">${m}</option>`).join('');
+				modelSel.disabled = models.length === 0;
+				
+				// Keep current selected model if it exists in list
+				if (models.length > 0 && fModel && models.map(m => m.toLowerCase()).includes(fModel)) {
+					modelSel.value = fModel;
+				}
+			}
+
+			if (makeSel && modelSel) {
+				makeSel.addEventListener('change', fillModels);
+				fillModels();
+			}
+
+			const items = Array.from(document.querySelectorAll('.listing-item'));
 			let shown = 0;
 			for (const el of items) {
+				const okCategory = !fCategory || el.dataset.category === fCategory;
 				const okMake = !fMake || el.dataset.make === fMake;
 				const okModel = !fModel || el.dataset.model === fModel;
 				const okBudget = !fBudget || Number(el.dataset.price) <= fBudget;
-				const show = okMake && okModel && okBudget;
+				const show = okCategory && okMake && okModel && okBudget;
 				el.hidden = !show;
 				if (show) shown++;
 			}
 
-			const filtered = Boolean(fMake || fModel || fBudget);
-			const bar = document.getElementById('results-bar')!;
-			const empty = document.getElementById('empty-state')!;
-			const noun = (n: number) => (n === 1 ? 'car' : 'cars');
+			const filtered = Boolean(fCategory || fMake || fModel || fBudget);
+			const bar = document.getElementById('results-bar');
+			const empty = document.getElementById('empty-state');
+			const noun = (n) => (n === 1 ? 'car' : 'cars');
 
-			if (filtered) {
-				bar.innerHTML = `<span>${shown} ${noun(shown)} match your filters</span> <a href="/listings">Clear filters</a>`;
-			} else {
-				bar.innerHTML = `<span>${items.length} ${noun(items.length)} available</span>`;
+			if (bar) {
+				if (filtered) {
+					bar.innerHTML = `<span>Found ${shown} ${noun(shown)} matching your criteria</span> <a href="/listings">Clear filters</a>`;
+				} else {
+					bar.innerHTML = `<span>Showing all ${items.length} available units</span>`;
+				}
 			}
-			empty.hidden = shown !== 0;
+			if (empty) {
+				empty.hidden = shown !== 0;
+			}
 		</script>
 	</body>
 </html>
 
 <style>
+	.listings-section {
+		padding: 2em 0;
+	}
+	.filter-panel {
+		background: var(--paper-off);
+		border: 1px solid var(--line);
+		padding: 1.5em;
+		margin-bottom: 2em;
+		margin-top: 1em;
+	}
+	.filter-form {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.25em;
+		align-items: flex-end;
+	}
+	.filter-form .field {
+		flex: 1 1 180px;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+	}
+	.filter-form label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--metal-gray);
+	}
+	.filter-form select {
+		width: 100%;
+		padding: 0.65em;
+		border: 1px solid var(--metal-gray-light);
+		background: var(--paper);
+		cursor: pointer;
+		font: inherit;
+	}
+	.filter-form select:focus-visible {
+		outline: 2px solid var(--accent-color);
+	}
+	.filter-form button {
+		flex: 1 1 120px;
+		padding: 0.7em 1.5em;
+	}
+
 	.results-bar {
 		display: flex;
 		gap: 1em;
@@ -80,8 +199,10 @@ import { listings } from '../data/listings';
 		margin: 0;
 		color: var(--metal-gray);
 		font-size: 0.95rem;
+		border-bottom: 2px solid var(--black-mica);
+		padding-bottom: 0.5em;
 	}
-	.results-bar a {
+	.results-bar :global(a) {
 		color: var(--red-mica);
 		font-weight: 700;
 		text-decoration: none;
@@ -97,7 +218,7 @@ import { listings } from '../data/listings';
 	}
 	.empty-state {
 		margin-top: 2em;
-		padding: 2em;
+		padding: 3em;
 		border: 1px dashed var(--metal-gray);
 		text-align: center;
 		color: var(--metal-gray);

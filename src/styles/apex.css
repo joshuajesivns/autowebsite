@@ -33,7 +33,7 @@
 	--text-color:   var(--black-mica);
 	--accent-color: var(--red-mica);
 
-	--font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--font-stack: var(--font-atkinson), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 body {

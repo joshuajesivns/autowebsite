@@ -14,31 +14,30 @@ const today = new Date();
 				<h3>Marketplace</h3>
 				<ul>
 					<li><a href="/listings">Inventory</a></li>
-					<li><a href="/listings?category=kei-truck">Kei Trucks</a></li>
-					<li><a href="/listings?category=sports">Sports Cars</a></li>
+					<li><a href="/models">Model Catalog</a></li>
+					<li><a href="/contact">Inquire Sourcing</a></li>
 				</ul>
 			</div>
 			<div class="nav-group">
 				<h3>Editorial</h3>
 				<ul>
 					<li><a href="/blog">News & Reviews</a></li>
-					<li><a href="/blog/guides">Buying Guides</a></li>
-					<li><a href="/blog/maintenance">Maintenance</a></li>
+					<li><a href="/models">JDM Buying Guides</a></li>
+					<li><a href="/blog/the-silent-surge-south-luzon-ev-era">EV Tech Features</a></li>
 				</ul>
 			</div>
 			<div class="nav-group">
 				<h3>Company</h3>
 				<ul>
 					<li><a href="/about">About Us</a></li>
-					<li><a href="/contact">Contact</a></li>
-					<li><a href="/privacy">Privacy Policy</a></li>
+					<li><a href="/contact">Contact Info</a></li>
 				</ul>
 			</div>
 		</nav>
 	</div>
 	<div class="footer-bottom">
 		&copy; {today.getFullYear()} {SITE_TITLE}. All rights reserved.
-		<p class="license">Licensed Dealer #001</p>
+		<p class="license">Licensed Automotive Importer No. 001-LTO</p>
 	</div>
 </footer>
 
@@ -50,7 +49,7 @@ const today = new Date();
 		border-top: 4px solid var(--accent-color);
 	}
 	.footer-content {
-		max-width: 1200px;
+		max-width: 1400px;
 		margin: 0 auto;
 		display: grid;
 		gap: 3em;
@@ -63,11 +62,15 @@ const today = new Date();
 	.brand-section h2 {
 		color: var(--paper);
 		margin-bottom: 0.5em;
+		text-transform: uppercase;
+		font-size: 1.5em;
+		letter-spacing: -0.02em;
 	}
 	.brand-section p {
 		color: var(--metal-gray-light);
 		max-width: 30ch;
 		line-height: 1.6;
+		font-size: 0.9rem;
 	}
 	.footer-nav {
 		display: grid;
@@ -98,7 +101,7 @@ const today = new Date();
 		color: var(--accent-color);
 	}
 	.footer-bottom {
-		max-width: 1200px;
+		max-width: 1400px;
 		margin: 4em auto 0;
 		padding-top: 2em;
 		border-top: 1px solid var(--black-mica-2);

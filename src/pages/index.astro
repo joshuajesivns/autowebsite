@@ -7,8 +7,13 @@ import VehicleSpecCard from '../components/VehicleSpecCard.astro';
 import PandaCard from '../components/PandaCard.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import heroImage from '../assets/hero-hero.jpg';
-import { listings as featuredListings, makes, modelsByMake } from '../data/listings';
+import { listings as featuredListings, makes, modelsByMake, CATEGORIES, availableInCategory } from '../data/listings';
+import { getCollection } from 'astro:content';
 import '../styles/apex.css';
+
+const latestBlogs = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 2);
 ---
 
 <!doctype html>
@@ -90,18 +95,34 @@ import '../styles/apex.css';
 			<section id="browse-category">
 				<h2>Browse by Category</h2>
 				<div class="grid">
-                    <PandaCard title="Kei Trucks" />
-                    <PandaCard title="Sports Cars" />
-                    <PandaCard title="RHD Vans" />
+                    {CATEGORIES.map((cat) => {
+                        const count = availableInCategory(cat.slug);
+                        return (
+                            <a href={`/listings?category=${cat.slug}`} class="card-anchor">
+                                <PandaCard
+                                    title={cat.label}
+                                    description={count > 0 ? `${cat.blurb} (${count} available)` : `${cat.blurb} — sourcing soon`}
+                                />
+                            </a>
+                        );
+                    })}
                 </div>
 			</section>
 
 			<section id="news-blog">
 				<h2>Automotive News & Blog</h2>
 				<div class="grid">
-                    <PandaCard title="Toyota Vios vs Honda City" />
-                    <PandaCard title="Top 5 Beginner JDM Imports" />
-                </div>
+					{latestBlogs.map((post) => (
+						<a href={`/blog/${post.id}/`} class="card-anchor">
+							<PandaCard 
+								title={post.data.title} 
+								description={post.data.description} 
+								image={post.data.heroImage}
+								tags={post.data.tags}
+							/>
+						</a>
+					))}
+				</div>
 			</section>
 
 			<section id="how-to">
@@ -127,7 +148,7 @@ import '../styles/apex.css';
 
 			<section id="closing-cta">
 				<h2>Ready to Find Your Dream Car?</h2>
-				<button class="primary">Browse Inventory</button>
+				<a href="/listings" class="cta-link"><button class="primary">Browse Inventory</button></a>
 			</section>
 		</main>
 		<Footer />
@@ -321,5 +342,12 @@ import '../styles/apex.css';
     #how-to a:focus-visible {
         outline: 3px solid var(--accent-color);
         outline-offset: 2px;
+    }
+    .card-anchor {
+        text-decoration: none;
+        color: inherit;
+    }
+    .cta-link {
+        text-decoration: none;
     }
 </style>

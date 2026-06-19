@@ -4,47 +4,154 @@ import HeaderLink from './HeaderLink.astro';
 ---
 
 <header>
-	<nav>
-		<h2><a href="/">{SITE_TITLE}</a></h2>
-		<div class="internal-links">
+	<nav class="nav-container">
+		<h2 class="logo"><a href="/">{SITE_TITLE}</a></h2>
+		
+		<!-- Hamburger Toggle Button -->
+		<button id="nav-toggle" class="nav-toggle-btn" aria-label="Toggle Menu" aria-expanded="false">
+			<span class="bar"></span>
+			<span class="bar"></span>
+			<span class="bar"></span>
+		</button>
+
+		<div id="nav-menu" class="internal-links">
 			<HeaderLink href="/">Home</HeaderLink>
 			<HeaderLink href="/listings">Listings</HeaderLink>
+			<HeaderLink href="/models">Catalog</HeaderLink>
 			<HeaderLink href="/blog">Blog</HeaderLink>
 			<HeaderLink href="/about">About</HeaderLink>
 			<HeaderLink href="/contact">Contact</HeaderLink>
 		</div>
 	</nav>
 </header>
+
+<script>
+	const toggle = document.getElementById('nav-toggle');
+	const menu = document.getElementById('nav-menu');
+
+	if (toggle && menu) {
+		toggle.addEventListener('click', () => {
+			const isOpen = menu.classList.toggle('open');
+			toggle.classList.toggle('open');
+			toggle.setAttribute('aria-expanded', String(isOpen));
+		});
+	}
+</script>
+
 <style>
 	header {
 		margin: 0;
 		padding: 0 1.5em;
 		background: var(--bg-color);
 		border-bottom: 2px solid var(--text-color);
+		position: relative;
+		z-index: 100;
 	}
-	h2 {
+	.logo {
 		margin: 0;
 		font-size: 1.25em;
 	}
-
-	h2 a {
+	.logo a {
 		text-decoration: none;
 		font-weight: 900;
+		letter-spacing: -0.02em;
+		text-transform: uppercase;
 	}
-	nav {
+	.nav-container {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		padding: 1em 0;
+		max-width: 1400px;
+		margin: 0 auto;
 	}
-	nav a {
+
+	/* Desktop Navigation */
+	.internal-links {
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
+	}
+	.internal-links :global(a) {
 		padding: 0.5em 1em;
 		color: var(--text-color);
 		text-decoration: none;
 		font-weight: 700;
+		font-size: 0.95rem;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
 	}
-	nav a.active {
+	.internal-links :global(a:hover) {
+		color: var(--accent-color);
+	}
+	.internal-links :global(a.active) {
 		text-decoration: underline;
 		text-underline-offset: 4px;
+	}
+
+	/* Hamburger Button Styles */
+	.nav-toggle-btn {
+		display: none; /* Hidden on desktop */
+		flex-direction: column;
+		justify-content: space-between;
+		width: 24px;
+		height: 18px;
+		background: transparent;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		z-index: 110;
+	}
+	.nav-toggle-btn:focus-visible {
+		outline: 2px solid var(--accent-color);
+		outline-offset: 4px;
+	}
+	.bar {
+		width: 100%;
+		height: 2px;
+		background-color: var(--text-color);
+		transition: transform 0.2s, opacity 0.2s;
+		border-radius: 0;
+	}
+
+	/* Mobile Navigation (under 768px) */
+	@media (max-width: 767px) {
+		.nav-toggle-btn {
+			display: flex;
+		}
+
+		/* Mobile menu drops down below header */
+		.internal-links {
+			display: none;
+			position: absolute;
+			top: 100%;
+			left: 0;
+			width: 100%;
+			background-color: var(--paper);
+			border-bottom: 2px solid var(--text-color);
+			flex-direction: column;
+			padding: 1.5em 0;
+			box-shadow: 0 10px 15px rgba(0, 0, 0, 0.05);
+			gap: 1em;
+		}
+		.internal-links.open {
+			display: flex;
+		}
+		.internal-links :global(a) {
+			width: 100%;
+			text-align: center;
+			padding: 0.75em 0;
+		}
+
+		/* Hamburger Animation to 'X' when open */
+		.nav-toggle-btn.open .bar:nth-child(1) {
+			transform: translateY(8px) rotate(45deg);
+		}
+		.nav-toggle-btn.open .bar:nth-child(2) {
+			opacity: 0;
+		}
+		.nav-toggle-btn.open .bar:nth-child(3) {
+			transform: translateY(-8px) rotate(-45deg);
+		}
 	}
 </style>

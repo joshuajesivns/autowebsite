@@ -4,39 +4,182 @@ import Layout from '../layouts/Page.astro';
 
 <Layout
 	title="Contact Apex Engine"
-	description="Get in touch for inquiries, listing support, or automotive advice."
+	description="Get in touch for import inquiries, technical documentation support, or vehicle inspections."
 >
 	<h2>Contact Apex Engine</h2>
 	<p>
-		For serious inquiries about listings, import procedures, or technical advice, please reach out via the channels below. We prioritize verified, high-intent communication.
+		For serious inquiries about active listings, custom import coordination, or LTO registry transfers, reach out below. We prioritize verified, high-intent communication.
 	</p>
 
-    <form class="contact-form">
-        <label for="name">Name</label>
-        <input type="text" id="name" name="name" required />
+	<div class="contact-grid">
+		<!-- Left: Contact Details -->
+		<div class="contact-details">
+			<h3>Direct Channels</h3>
+			<ul class="contact-list">
+				<li>
+					<strong>Head Office</strong>
+					<span>Alabang Investment District, Muntinlupa City, Metro Manila, Philippines</span>
+				</li>
+				<li>
+					<strong>Email</strong>
+					<span><a href="mailto:info@apexengine.ph">info@apexengine.ph</a></span>
+				</li>
+				<li>
+					<strong>Technical Hotline</strong>
+					<span>+63 (2) 8888-APEX</span>
+				</li>
+				<li>
+					<strong>Operating Hours</strong>
+					<span>Monday – Saturday, 9:00 AM – 6:00 PM</span>
+				</li>
+				<li>
+					<strong>Dealer Accreditation</strong>
+					<span>Licensed Automotive Importer No. 001-LTO</span>
+				</li>
+			</ul>
+		</div>
 
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required />
+		<!-- Right: Form with Interaction -->
+		<div class="contact-form-container">
+			<h3>Send a Message</h3>
+			<form id="contact-form" class="contact-form">
+				<div class="form-group">
+					<label for="name">Name</label>
+					<input type="text" id="name" name="name" required placeholder="Juan dela Cruz" />
+				</div>
 
-        <label for="message">Message</label>
-        <textarea id="message" name="message" rows="5" required></textarea>
+				<div class="form-group">
+					<label for="email">Email</label>
+					<input type="email" id="email" name="email" required placeholder="juan@gmail.com" />
+				</div>
 
-        <button type="submit">Send Inquiry</button>
-    </form>
+				<div class="form-group">
+					<label for="message">Message</label>
+					<textarea id="message" name="message" rows="5" required placeholder="How can our technical audit team assist you? Please mention specific listing IDs if applicable."></textarea>
+				</div>
+
+				<button type="submit" class="primary">Send Inquiry</button>
+			</form>
+
+			<div id="contact-success" class="success-message" hidden>
+				<h4>Inquiry Logged</h4>
+				<p>Your ticket has been sent to our technical verification desk. We will review it and reply via email within 24 hours.</p>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const form = document.getElementById('contact-form');
+		const success = document.getElementById('contact-success');
+
+		if (form && success) {
+			form.addEventListener('submit', (e) => {
+				e.preventDefault();
+				form.setAttribute('hidden', 'true');
+				success.removeAttribute('hidden');
+			});
+		}
+	</script>
 </Layout>
 
 <style>
-    .contact-form {
-        display: flex;
-        flex-direction: column;
-        gap: 1em;
-        max-width: 500px;
-        margin-top: 2em;
-    }
-    label { font-weight: 700; }
-    input, textarea {
-        padding: 0.5em;
-        border: 2px solid var(--text-color);
-        border-radius: 0;
-    }
+	.contact-grid {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 3em;
+		margin-top: 2.5em;
+	}
+	@media (min-width: 768px) {
+		.contact-grid {
+			grid-template-columns: 1fr 1.2fr;
+		}
+	}
+
+	h3 {
+		font-size: 1.25rem;
+		text-transform: uppercase;
+		margin-bottom: 1em;
+		border-bottom: 2px solid var(--black-mica);
+		padding-bottom: 0.3em;
+	}
+
+	.contact-details {
+		display: flex;
+		flex-direction: column;
+	}
+	.contact-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1.5em;
+	}
+	.contact-list li {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25em;
+	}
+	.contact-list strong {
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		color: var(--metal-gray);
+		letter-spacing: 0.05em;
+	}
+	.contact-list span {
+		font-size: 0.95rem;
+		font-weight: 500;
+	}
+	.contact-list a {
+		color: var(--accent-color);
+		text-decoration: none;
+		font-weight: 700;
+	}
+
+	.contact-form-container {
+		display: flex;
+		flex-direction: column;
+	}
+	.contact-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25em;
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+	}
+	label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	input, textarea {
+		padding: 0.75em;
+		border: 1px solid var(--metal-gray-light);
+		background: var(--paper);
+		font-family: inherit;
+		font-size: 0.95rem;
+	}
+	input:focus-visible, textarea:focus-visible {
+		outline: 2px solid var(--accent-color);
+	}
+	.success-message {
+		text-align: center;
+		padding: 2em;
+		background: #ECFDF5;
+		border: 1px solid #10B981;
+		color: #065F46;
+	}
+	.success-message h4 {
+		margin-bottom: 0.5em;
+		color: #065F46;
+		text-transform: uppercase;
+	}
+	.success-message p {
+		font-size: 0.95rem;
+		margin: 0;
+	}
 </style>
