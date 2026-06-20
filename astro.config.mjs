@@ -8,7 +8,7 @@ import { defineConfig, fontProviders } from 'astro/config';
 export default defineConfig({
 	// Real domain — keep in sync with SITE_URL in src/consts.ts.
 	// NOTE: only merge to production once this domain's DNS points to Vercel.
-	site: 'https://apexenginehq.com',
+	site: 'https://www.apexenginehq.com',
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{
