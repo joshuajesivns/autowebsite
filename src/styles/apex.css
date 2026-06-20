@@ -2,6 +2,15 @@
   Apex Engine - Secure Base Styles
 */
 
+/* Brand display font (logo / Fredoka), self-hosted from /public/fonts */
+@font-face {
+	font-family: 'Fredoka';
+	src: url('/fonts/fredoka-600.woff2') format('woff2');
+	font-weight: 600;
+	font-style: normal;
+	font-display: swap;
+}
+
 :root {
 	/* ---- Brand palette ----------------------------------------------------
 	   "Panda" black & white foundation (AE86 Sprinter Trueno) extended with

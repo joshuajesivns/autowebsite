@@ -1,0 +1,67 @@
+---
+/* Apex Engine logo. variant="wordmark" (header) | "stamp" (footer/circle).
+   Text colour follows currentColor; red accents use --accent-color.
+   Uses the self-hosted Fredoka font (@font-face in apex.css). Size it from the
+   parent via the passed class (e.g. height for wordmark, width for stamp). */
+interface Props {
+	variant?: 'wordmark' | 'stamp';
+	class?: string;
+}
+const { variant = 'wordmark', class: className = '' } = Astro.props;
+---
+
+{variant === 'wordmark' ? (
+	<svg class={`ae-logo ae-wordmark ${className}`} viewBox="0 0 470 112" role="img" aria-label="Apex Engine">
+		<g transform="skewX(-11)">
+			<rect x="42" y="40" width="48" height="9" rx="4.5" class="streak" />
+			<rect x="28" y="56" width="32" height="9" rx="4.5" class="streak s2" />
+			<rect x="46" y="72" width="42" height="9" rx="4.5" class="streak s3" />
+			<text x="110" y="80">APEX ENGINE</text>
+		</g>
+	</svg>
+) : (
+	<svg class={`ae-logo ae-stamp ${className}`} viewBox="0 0 200 200" role="img" aria-label="Apex Engine">
+		<circle cx="100" cy="100" r="96" class="ring-outer" />
+		<circle cx="100" cy="100" r="84" class="ring-inner" />
+		<rect x="68" y="60" width="64" height="7" rx="3.5" class="streak" />
+		<rect x="76" y="72" width="48" height="7" rx="3.5" class="streak s2" />
+		<text x="106" y="118" text-anchor="middle" transform="translate(0,118) skewX(-9) translate(0,-118)" class="t-apex">APEX</text>
+		<text x="101" y="152" text-anchor="middle" transform="translate(0,152) skewX(-9) translate(0,-152)" class="t-engine">ENGINE</text>
+	</svg>
+)}
+
+<style>
+	.ae-logo {
+		display: block;
+	}
+	.ae-logo text {
+		font-family: 'Fredoka', Verdana, Helvetica, sans-serif;
+		font-weight: 600;
+		fill: currentColor;
+	}
+	.ae-logo .streak {
+		fill: var(--accent-color);
+	}
+	.ae-logo .streak.s2 { opacity: 0.6; }
+	.ae-logo .streak.s3 { opacity: 0.4; }
+
+	.ae-wordmark text {
+		font-size: 54px;
+	}
+
+	.ae-stamp .ring-outer {
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 4;
+	}
+	.ae-stamp .ring-inner {
+		fill: none;
+		stroke: var(--accent-color);
+		stroke-width: 2.5;
+	}
+	.ae-stamp text {
+		font-size: 31px;
+	}
+	.ae-stamp .t-apex { letter-spacing: 12px; }
+	.ae-stamp .t-engine { letter-spacing: 2px; }
+</style>

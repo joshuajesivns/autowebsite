@@ -1,11 +1,11 @@
 ---
-import { SITE_TITLE } from '../consts';
 import HeaderLink from './HeaderLink.astro';
+import Logo from './Logo.astro';
 ---
 
 <header>
 	<nav class="nav-container">
-		<h2 class="logo"><a href="/">{SITE_TITLE}</a></h2>
+		<a href="/" class="logo" aria-label="Apex Engine — Home"><Logo variant="wordmark" class="header-logo" /></a>
 		
 		<!-- Hamburger Toggle Button -->
 		<button id="nav-toggle" class="nav-toggle-btn" aria-label="Toggle Menu" aria-expanded="false">
@@ -48,14 +48,14 @@ import HeaderLink from './HeaderLink.astro';
 		z-index: 100;
 	}
 	.logo {
-		margin: 0;
-		font-size: 1.25em;
-	}
-	.logo a {
+		display: inline-flex;
+		align-items: center;
+		color: var(--text-color);
 		text-decoration: none;
-		font-weight: 900;
-		letter-spacing: -0.02em;
-		text-transform: uppercase;
+	}
+	.logo :global(.header-logo) {
+		height: 2rem;
+		width: auto;
 	}
 	.nav-container {
 		display: flex;

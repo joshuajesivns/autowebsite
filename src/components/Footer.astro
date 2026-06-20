@@ -1,12 +1,13 @@
 ---
 import { SITE_TITLE } from '../consts';
+import Logo from './Logo.astro';
 const today = new Date();
 ---
 
 <footer>
 	<div class="footer-content">
 		<div class="brand-section">
-			<h2>{SITE_TITLE}</h2>
+			<Logo variant="stamp" class="footer-stamp" />
 			<p>Documenting machines, not just listing them. Verified automotive imports and technical guides for the Philippines.</p>
 		</div>
 		<nav class="footer-nav">
@@ -65,6 +66,12 @@ const today = new Date();
 		text-transform: uppercase;
 		font-size: 1.5em;
 		letter-spacing: -0.02em;
+	}
+	.brand-section :global(.footer-stamp) {
+		width: 116px;
+		height: 116px;
+		margin-bottom: 1.25em;
+		color: var(--paper);
 	}
 	.brand-section p {
 		color: var(--metal-gray-light);
