@@ -6,7 +6,7 @@ export const SITE_DESCRIPTION = 'The Ultimate Automotive Engineering Guide and M
 
 // ── SEO / authority config ──────────────────────────────────────────────
 // Keep SITE_URL in sync with `site` in astro.config.mjs.
-export const SITE_URL = 'https://apexengine.ph';
+export const SITE_URL = 'https://apexenginehq.com';
 
 // Paste your IDs here when you have them; each feature is skipped until set.
 export const GA_MEASUREMENT_ID = '';          // e.g. 'G-XXXXXXXXXX' (Google Analytics 4)
@@ -22,7 +22,7 @@ export const SOCIAL_LINKS: string[] = [
 // Business identity (NAP) for Organization structured data.
 export const ORG = {
 	name: SITE_TITLE,
-	email: 'info@apexengine.ph',
+	email: 'info@apexenginehq.com',
 	telephone: '+63 (2) 8888-APEX',
 	streetAddress: 'Alabang Investment District',
 	addressLocality: 'Muntinlupa City',

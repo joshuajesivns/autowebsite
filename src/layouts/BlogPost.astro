@@ -9,10 +9,10 @@ import '../styles/apex.css';
 
 type Props = CollectionEntry<'blog'>['data'];
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, faq } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="en-PH">
 	<head>
 		<BaseHead title={title} description={description} />
 		<script type="application/ld+json" is:inline set:html={JSON.stringify({
@@ -28,6 +28,17 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 				"name": "Apex Engine Editorial Team"
 			}
 		})} />
+		{faq && faq.length > 0 && (
+			<script type="application/ld+json" is:inline set:html={JSON.stringify({
+				"@context": "https://schema.org",
+				"@type": "FAQPage",
+				"mainEntity": faq.map((item) => ({
+					"@type": "Question",
+					"name": item.q,
+					"acceptedAnswer": { "@type": "Answer", "text": item.a },
+				})),
+			})} />
+		)}
 	</head>
 
 	<body>
@@ -61,6 +72,18 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
                     <div class="prose">
                         <slot />
                         
+                        {faq && faq.length > 0 && (
+                            <section class="faq">
+                                <h2>Frequently Asked Questions</h2>
+                                {faq.map((item) => (
+                                    <details class="faq-item">
+                                        <summary>{item.q}</summary>
+                                        <p>{item.a}</p>
+                                    </details>
+                                ))}
+                            </section>
+                        )}
+
                         <div class="author-block">
                             <h3>About the Author</h3>
                             <p>Expert automotive content by Apex Engine Editorial Team. Last updated: <FormattedDate date={updatedDate || pubDate} /></p>
@@ -268,6 +291,34 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
         margin: 0;
         font-size: 0.95rem;
         color: var(--metal-gray);
+    }
+
+    /* FAQ — visible Q&A, paired with FAQPage schema for AI Overviews */
+    .faq {
+        margin-top: 3em;
+        border-top: 4px solid var(--black-mica);
+        padding-top: 1.5em;
+    }
+    .faq h2 {
+        font-size: 1.5rem;
+        text-transform: uppercase;
+        margin-bottom: 0.75em;
+    }
+    .faq-item {
+        border-bottom: 1px solid var(--line);
+        padding: 0.75em 0;
+    }
+    .faq-item summary {
+        cursor: pointer;
+        font-weight: 700;
+        list-style-position: inside;
+    }
+    .faq-item summary:hover {
+        color: var(--accent-color);
+    }
+    .faq-item p {
+        margin: 0.6em 0 0;
+        color: var(--black-mica-2);
     }
 
     /* Data-friendly table styling */
