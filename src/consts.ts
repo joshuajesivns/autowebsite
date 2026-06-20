@@ -9,7 +9,7 @@ export const SITE_DESCRIPTION = 'The Ultimate Automotive Engineering Guide and M
 export const SITE_URL = 'https://www.apexenginehq.com';
 
 // Paste your IDs here when you have them; each feature is skipped until set.
-export const GA_MEASUREMENT_ID = '';          // e.g. 'G-XXXXXXXXXX' (Google Analytics 4)
+export const GA_MEASUREMENT_ID = 'G-QE5FCP0VXP';   // Google Analytics 4
 export const GOOGLE_SITE_VERIFICATION = '';   // optional Search Console meta token
 
 // Official profiles — populate as you create them (used for Organization sameAs).
