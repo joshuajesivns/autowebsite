@@ -5,9 +5,9 @@ An Astro static site combining an **automotive blog** and a **vehicle listing ma
 aimed at the Philippines / JDM market. Built originally from the Astro blog starter and being
 reshaped into the product below.
 
-> **Brand name is not final.** Using **"Apex Engine"** for now. The codebase also contains the
-> name **"SouthShift"** (folder name, blog author byline) — this is leftover inconsistency, not a
-> second product. When in doubt, use "Apex Engine".
+> **Brand: "Apex Engine"** everywhere — name, folder (`apex-engine`), and bylines.
+> If you find any other working name left in the codebase, treat it as leftover and
+> change it to "Apex Engine". There is only one product.
 
 ## Goal & audience
 - **Audience:** car buyers — new *and* second-hand — plus keen enthusiasts. Competitors/benchmarks
@@ -36,7 +36,7 @@ reshaped into the product below.
   pushing to `main`; prefer a preview branch (Vercel gives each branch a preview URL) when unsure.
 
 ## Known gaps / cleanup backlog (as of 2026-06-16)
-- Branding split between "Apex Engine" and "SouthShift" (see above).
+- Branding unified to "Apex Engine"; working folder renamed to `apex-engine` (2026-06-19).
 - `astro.config.mjs` `site` is still the placeholder `https://example.com` — breaks canonical URLs,
   sitemap, RSS, and OG image absolute URLs. Should be set to the real domain.
 - Inventory is centralized (still mock) in `src/data/listings.ts` — the single source for the
