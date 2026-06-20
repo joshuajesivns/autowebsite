@@ -54,7 +54,9 @@ const { title, description, pubDate, updatedDate, heroImage, faq } = Astro.props
                     )}
                     <div class="hero-content">
                         <div class="date">
-                            <FormattedDate date={pubDate} />
+                            {updatedDate && updatedDate.valueOf() !== pubDate.valueOf()
+                                ? (<>Updated <FormattedDate date={updatedDate} /></>)
+                                : (<FormattedDate date={pubDate} />)}
                         </div>
                         <h1>{title}</h1>
                         <p class="description">{description}</p>
