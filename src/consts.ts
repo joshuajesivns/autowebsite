@@ -10,7 +10,7 @@ export const SITE_URL = 'https://www.apexenginehq.com';
 
 // Paste your IDs here when you have them; each feature is skipped until set.
 export const GA_MEASUREMENT_ID = 'G-QE5FCP0VXP';   // Google Analytics 4
-export const GOOGLE_SITE_VERIFICATION = '';   // optional Search Console meta token
+export const GOOGLE_SITE_VERIFICATION = 'HSbvWsGQs2LsqcS746ovWF7VAdN57syR2MZeKmg6b5s';   // Search Console verification
 
 // Official profiles — populate as you create them (used for Organization sameAs).
 export const SOCIAL_LINKS: string[] = [
