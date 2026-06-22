@@ -4,7 +4,7 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import VehicleSpecCard from '../../components/VehicleSpecCard.astro';
 import { getCollection, render } from 'astro:content';
-import { listings } from '../../data/listings';
+import { listings, LISTINGS_LIVE } from '../../data/listings';
 
 export async function getStaticPaths() {
 	const modelEntries = await getCollection('models');
@@ -20,10 +20,12 @@ const { make, model, yearsProduced, engine, transmission, fuel, seats, bodyType,
 // Render markdown body
 const { Content } = await render(entry);
 
-// Query active listings for this model
-const activeListings = listings.filter(
-	(l) => l.make.toLowerCase() === make.toLowerCase() && l.model.toLowerCase().includes(model.toLowerCase().split(' ')[0])
-);
+// Query active listings for this model (suppressed while inventory is "Coming Soon")
+const activeListings = LISTINGS_LIVE
+	? listings.filter(
+		(l) => l.make.toLowerCase() === make.toLowerCase() && l.model.toLowerCase().includes(model.toLowerCase().split(' ')[0])
+	)
+	: [];
 
 // Query blog articles relating to this make or model
 const allBlogs = await getCollection('blog');

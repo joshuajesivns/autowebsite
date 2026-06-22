@@ -4,9 +4,13 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import VehicleSpecCard from '../../components/VehicleSpecCard.astro';
 import { Image } from 'astro:assets';
-import { listings } from '../../data/listings';
+import { listings, LISTINGS_LIVE } from '../../data/listings';
 
 export async function getStaticPaths() {
+	// While inventory is "Coming Soon", don't generate detail pages (which would
+	// otherwise emit Product schema with availability:InStock). They light back up
+	// automatically when LISTINGS_LIVE flips to true.
+	if (!LISTINGS_LIVE) return [];
 	return listings.map((item) => ({
 		params: { slug: item.id },
 		props: { car: item },

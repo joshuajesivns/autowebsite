@@ -5,6 +5,12 @@ import ae86Engine from '../assets/listings/ae86_engine.jpg';
 import r34Exterior from '../assets/listings/r34_exterior.jpg';
 import heroImage from '../assets/hero-hero.jpg';
 
+/* Master switch — while we have no real inventory, the site presents listings as
+   "Coming Soon" rather than showing the mock cars below as if they were available.
+   Flip to `true` once real listings exist; the mock data stays as the shape/contract
+   reference and the search/filter UI light back up automatically. */
+export const LISTINGS_LIVE = false;
+
 /* Single source of truth for inventory (mock for now).
    The hero search dropdowns and the /listings filter both derive from this,
    so they can never drift out of sync. Replace with a content collection
