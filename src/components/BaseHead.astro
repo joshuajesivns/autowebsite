@@ -20,21 +20,21 @@ const { title, description, image = FallbackImage } = Astro.props;
 
 // Site-wide Organization entity — gives search engines + AI Overviews a single
 // authoritative identity (name, logo, NAP, official profiles) to attach trust to.
+const addressFields = {
+	...(ORG.streetAddress ? { streetAddress: ORG.streetAddress } : {}),
+	...(ORG.addressLocality ? { addressLocality: ORG.addressLocality } : {}),
+	...(ORG.addressRegion ? { addressRegion: ORG.addressRegion } : {}),
+	...(ORG.addressCountry ? { addressCountry: ORG.addressCountry } : {}),
+};
 const orgSchema = {
 	'@context': 'https://schema.org',
 	'@type': 'Organization',
 	name: SITE_TITLE,
 	url: site,
 	logo: new URL('/favicon-512.png', site).href,
-	email: ORG.email,
-	telephone: ORG.telephone,
-	address: {
-		'@type': 'PostalAddress',
-		streetAddress: ORG.streetAddress,
-		addressLocality: ORG.addressLocality,
-		addressRegion: ORG.addressRegion,
-		addressCountry: ORG.addressCountry,
-	},
+	...(ORG.email ? { email: ORG.email } : {}),
+	...(ORG.telephone ? { telephone: ORG.telephone } : {}),
+	...(Object.keys(addressFields).length ? { address: { '@type': 'PostalAddress', ...addressFields } } : {}),
 	...(SOCIAL_LINKS.length ? { sameAs: SOCIAL_LINKS } : {}),
 };
 ---

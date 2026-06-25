@@ -23,9 +23,10 @@ export const SOCIAL_LINKS: string[] = [
 export const ORG = {
 	name: SITE_TITLE,
 	email: 'info@apexenginehq.com',
-	telephone: '+63 (2) 8888-APEX',
-	streetAddress: 'Alabang Investment District',
-	addressLocality: 'Muntinlupa City',
-	addressRegion: 'Metro Manila',
+	// Fill in real values when available — blank fields are omitted from structured data.
+	telephone: '',
+	streetAddress: '',
+	addressLocality: '',
+	addressRegion: '',
 	addressCountry: 'PH',
 };
