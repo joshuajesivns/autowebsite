@@ -1,0 +1,13 @@
+{
+  "name": "apex-seo-report",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Joins Google Search Console + GA4 data into a prioritized 'what to optimize next' report for apexenginehq.com",
+  "scripts": {
+    "report": "node report.mjs"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}

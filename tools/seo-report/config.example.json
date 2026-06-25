@@ -1,0 +1,10 @@
+{
+  "gscSiteUrl": "https://www.apexenginehq.com/",
+  "ga4PropertyId": "PASTE_NUMERIC_GA4_PROPERTY_ID",
+  "lookbackDays": 28,
+  "pagespeed": { "enabled": true, "strategy": "mobile", "maxUrls": 10 },
+  "pagespeedApiKey": "",
+  "indexCheck": { "enabled": true, "maxUrls": 30 },
+  "ai": { "enabled": false, "provider": "gemini", "model": "gemini-1.5-flash", "apiKey": "" },
+  "keywords": { "enabled": false, "provider": "", "apiKey": "" }
+}
