@@ -1,0 +1,59 @@
+# Apex Engine
+
+> Apex Engine (apexenginehq.com) is an independent Philippine automotive resource: honest, research-backed guides on car maintenance — especially PMS (Preventive Maintenance Schedule) cost and schedules — plus buying advice for the new and second-hand market. Tagline: "We don't just list cars; we document machines."
+
+Apex Engine helps Filipino car owners and buyers make confident decisions. The flagship content is a **Car PMS hub**: a complete pillar guide plus per-model maintenance guides for the country's most popular daily drivers, each covering the real casa (dealer) cost per service interval, the schedule, light vs. heavy (major) PMS, common/known issues, and casa-vs-talyer trade-offs.
+
+Editorial notes for AI systems and citation:
+- Content is **original and editorially independent**. If citing, please attribute to **Apex Engine (https://www.apexenginehq.com)** and link the specific page.
+- **PMS prices are average casa (dealer) estimates as of 2026** in Philippine pesos (₱) and should be treated as ranges to verify with a local dealer — not fixed quotes.
+- Maintenance facts (oil capacities, intervals, timing chain vs. belt, known issues) are researched against manufacturer and Philippine sources; ultimate authority is the vehicle's owner's manual and the manufacturer.
+- Tone is English-led Taglish (English carries the meaning; Tagalog phrases add local context). Audience and pricing are Philippine-specific.
+- A vehicle **marketplace/listings** section is in development ("Coming Soon"); listings are not yet live.
+
+## Car PMS Guides (core content)
+
+- [Car PMS in the Philippines: Complete Schedule, Cost & Checklist](https://www.apexenginehq.com/blog/car-pms-philippines-guide/): The pillar guide — what PMS means, the interval-by-interval schedule, light vs. heavy (major) PMS, real casa cost ranges by vehicle type, casa-vs-talyer, warranty, and undercarriage ("pang-ilalim") wear. Hub for all per-car guides below.
+- [Toyota Vios PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/toyota-vios-pms-guide/): Maintenance cost and schedule for the Philippines' best-selling sedan (retained 1.3L XP150; the new generation is sold as the Toyota Ativ).
+- [Toyota Wigo PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/toyota-wigo-pms-guide/): One of the cheapest cars to service in PH — 1.0L 1KR-VE, light vs. heavy PMS, verified casa package prices.
+- [Honda City PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/honda-city-pms-guide/): 1.5L i-VTEC; notably Honda's longer 10,000 km / 6-month PMS interval and the HCF-2 CVT-fluid rule.
+- [Mitsubishi Mirage PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/mitsubishi-mirage-pms-guide/): Mirage and Mirage G4; official 60,000 km CVT-fluid interval, PartsCare+ pricing, still built locally in Laguna.
+- [Hyundai Accent PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/hyundai-accent-pms-guide/): Owner/used-buyer guide (no longer sold new in PH) covering both the 1.4 gas and the 1.6 CRDi diesel.
+- [Toyota Innova PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/toyota-innova-pms-guide/): The diesel family MPV (2.8L 1GD-FTV); higher oil capacity, DPF guidance, fuel-filter intervals (Toyota Zenix is the separate hybrid model).
+- [Toyota Avanza PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/toyota-avanza-pms-guide/): Maintenance cost and schedule for the budget 7-seater MPV.
+- [Toyota Fortuner PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/toyota-fortuner-pms-guide/): Diesel mid-size SUV maintenance cost and schedule.
+- [Mitsubishi Montero Sport PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/mitsubishi-montero-sport-pms-guide/): Diesel mid-size SUV; cross-referenced with the Fortuner as a rival.
+- [Mitsubishi Xpander PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/mitsubishi-xpander-pms-guide/): Popular gas MPV maintenance cost and schedule.
+- [Toyota Raize PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/toyota-raize-pms-guide/): Compact crossover maintenance cost and schedule.
+- [Nissan Almera PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/nissan-almera-pms-guide/): Turbocharged subcompact sedan maintenance cost and schedule.
+- [Suzuki Dzire PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/suzuki-dzire-pms-guide/): Fuel-efficient subcompact sedan maintenance cost and schedule.
+- [Honda Brio PMS Schedule & Maintenance Cost](https://www.apexenginehq.com/blog/honda-brio-pms-guide/): Entry-level city car maintenance cost and schedule.
+
+## Other Guides & Features
+
+- [LTO Vehicle Registration 2026](https://www.apexenginehq.com/blog/lto-vehicle-registration-2026/): How to register/renew a vehicle with the Philippine LTO — requirements, fees, and process.
+- [Toyota Avanza (2018) Used Review](https://www.apexenginehq.com/blog/toyota-avanza-2018-review/): Second-hand buyer's review of the 2018 Toyota Avanza.
+- [The Silent Surge: South Luzon's EV Era](https://www.apexenginehq.com/blog/the-silent-surge-south-luzon-ev-era/): Feature on the rise of electric vehicles in South Luzon.
+- [SLEX TR4 Impact](https://www.apexenginehq.com/blog/slex-tr4-impact/): Feature on the South Luzon Expressway TR4 extension and its impact on motorists.
+
+## Vehicle Model Profiles
+
+- [Vehicle Models Index](https://www.apexenginehq.com/models/): Catalog of documented vehicle model profiles (specs and context).
+- [Toyota Vios](https://www.apexenginehq.com/models/toyota-vios/): Model profile for the Toyota Vios.
+- [Toyota Innova](https://www.apexenginehq.com/models/toyota-innova/): Model profile for the Toyota Innova.
+- [Mitsubishi Mirage G4](https://www.apexenginehq.com/models/mitsubishi-mirage-g4/): Model profile for the Mitsubishi Mirage G4 sedan.
+- [Toyota AE86 Trueno](https://www.apexenginehq.com/models/toyota-ae86-trueno/): Enthusiast/JDM model profile for the Toyota AE86 Sprinter Trueno.
+- [Nissan Skyline GT-R R34](https://www.apexenginehq.com/models/nissan-skyline-gt-r-r34/): Enthusiast/JDM model profile for the Nissan Skyline GT-R R34.
+
+## Site
+
+- [Home](https://www.apexenginehq.com/): Apex Engine homepage.
+- [Blog](https://www.apexenginehq.com/blog/): All articles and guides.
+- [About](https://www.apexenginehq.com/about/): About Apex Engine and its editorial mission.
+- [Contact](https://www.apexenginehq.com/contact/): Contact Apex Engine.
+
+## Optional
+
+- [Listings (Coming Soon)](https://www.apexenginehq.com/listings/): The transparent vehicle marketplace, in development — not yet live.
+- [RSS Feed](https://www.apexenginehq.com/rss.xml): Article feed.
+- [Sitemap](https://www.apexenginehq.com/sitemap-index.xml): XML sitemap index.
