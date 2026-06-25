@@ -87,10 +87,19 @@ const orgSchema = {
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={new URL(image.src, Astro.url)} />
 
-<!-- Google Analytics 4 (rendered only when GA_MEASUREMENT_ID is set) -->
+<!-- Google Analytics 4 — fires ONLY on the live domain, so localhost dev and
+     Vercel preview URLs don't inflate Direct traffic in the same property. -->
 {GA_MEASUREMENT_ID && (
-	<>
-		<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}></script>
-		<script is:inline set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}');`}></script>
-	</>
+	<script is:inline set:html={`
+		if (location.hostname.endsWith('apexenginehq.com')) {
+			var s=document.createElement('script');
+			s.async=true;
+			s.src='https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
+			document.head.appendChild(s);
+			window.dataLayer=window.dataLayer||[];
+			function gtag(){dataLayer.push(arguments);}
+			gtag('js',new Date());
+			gtag('config','${GA_MEASUREMENT_ID}');
+		}
+	`} />
 )}
