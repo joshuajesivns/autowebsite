@@ -1,66 +1,118 @@
 ---
-import PageLayout from '../../layouts/Page.astro';
-import VehicleSpecCard from '../../components/VehicleSpecCard.astro';
-import { SITE_TITLE } from '../../consts';
+export const prerender = false;
 
-// Mock pending listings data
-const pendingListings = [
-    { make: "Toyota", model: "Vios 2020", engine: "1.3L", transmission: "MT", fuel: "Gasoline", seats: 5 },
-    { make: "Honda", model: "Civic 2019", engine: "1.8L", transmission: "AT", fuel: "Gasoline", seats: 5 },
-];
+import PageLayout from '../../layouts/Page.astro';
+import { ADMIN_COOKIE_NAME, isValidAdminSession } from '../../lib/adminAuth';
+import { getAdminSupabase } from '../../lib/supabase';
+
+if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
+	return Astro.redirect('/admin/login');
+}
+
+const supabase = getAdminSupabase();
+const { data: pendingReports, error } = await supabase
+	.from('pms_reports')
+	.select('*')
+	.eq('status', 'pending')
+	.order('created_at', { ascending: true });
 ---
 
 <PageLayout
-    title="Moderator Dashboard"
-    description="Review and approve pending listings."
+	title="Moderator Dashboard"
+	description="Review and approve pending PMS cost reports."
 >
-    <h2>Moderation Queue</h2>
-    <p>Review pending submissions against Apex Engine quality standards.</p>
+	<p>Review pending submissions against Apex Engine quality standards — this is a plausibility check, not fact-verification.</p>
 
-    <div class="moderation-grid">
-        {pendingListings.map(listing => (
-            <div class="moderation-item">
-                <VehicleSpecCard data={listing} />
-                <div class="actions">
-                    <button class="approve">Approve</button>
-                    <button class="reject">Reject</button>
-                </div>
-            </div>
-        ))}
-    </div>
+	{error && <p class="error-message">Could not load reports: {error.message}</p>}
+
+	{pendingReports && pendingReports.length === 0 && <p>No pending reports right now.</p>}
+
+	<div class="moderation-grid">
+		{pendingReports?.map((r) => (
+			<div class="moderation-item">
+				<div class="report-card">
+					<h3>{r.make} {r.model} ({r.model_year}{r.trim ? `, ${r.trim}` : ''})</h3>
+					<ul>
+						<li><strong>Service:</strong> {r.service_type}</li>
+						<li><strong>Mileage:</strong> {Number(r.mileage_km).toLocaleString()} km</li>
+						<li><strong>Paid:</strong> ₱{Number(r.amount_php).toLocaleString()}</li>
+						<li><strong>Where:</strong> {r.service_location}</li>
+						{r.region && <li><strong>Region:</strong> {r.region}</li>}
+						{r.service_date && <li><strong>Date:</strong> {r.service_date}</li>}
+						{r.notes && <li><strong>Notes:</strong> {r.notes}</li>}
+						<li><strong>Submitted:</strong> {new Date(r.created_at).toLocaleString()}</li>
+					</ul>
+				</div>
+				<div class="actions">
+					<form method="POST" action="/api/admin/moderate">
+						<input type="hidden" name="id" value={r.id} />
+						<input type="hidden" name="action" value="approve" />
+						<button type="submit" class="approve">Approve</button>
+					</form>
+					<form method="POST" action="/api/admin/moderate">
+						<input type="hidden" name="id" value={r.id} />
+						<input type="hidden" name="action" value="reject" />
+						<button type="submit" class="reject">Reject</button>
+					</form>
+				</div>
+			</div>
+		))}
+	</div>
 </PageLayout>
 
 <style>
-    .moderation-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 2em;
-        margin-top: 2em;
-    }
-    .moderation-item {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5em;
-    }
-    .actions {
-        display: flex;
-        gap: 1em;
-    }
-    button {
-        flex: 1;
-        text-transform: uppercase;
-        font-weight: 700;
-        padding: 0.5em;
-        cursor: pointer;
-    }
-    .approve {
-        background: #228B22;
-        color: white;
-        border: none;
-    }
-    .reject {
-        background: var(--accent-color);
-        color: white;
-        border: none;
-    }
+	.moderation-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 2em;
+		margin-top: 2em;
+	}
+	.moderation-item {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75em;
+		border: 1px solid var(--metal-gray-light);
+		padding: 1.25em;
+	}
+	.report-card h3 {
+		margin: 0 0 0.5em;
+		text-transform: uppercase;
+		font-size: 1.05rem;
+	}
+	.report-card ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3em;
+		font-size: 0.9rem;
+	}
+	.actions {
+		display: flex;
+		gap: 1em;
+	}
+	.actions form {
+		flex: 1;
+	}
+	button {
+		width: 100%;
+		text-transform: uppercase;
+		font-weight: 700;
+		padding: 0.5em;
+		cursor: pointer;
+		border: none;
+	}
+	.approve {
+		background: #228B22;
+		color: white;
+	}
+	.reject {
+		background: var(--accent-color);
+		color: white;
+	}
+	.error-message {
+		color: var(--red-mica-dark, #B91C1C);
+		font-weight: 700;
+	}
 </style>

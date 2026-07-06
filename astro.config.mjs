@@ -2,6 +2,7 @@
 
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import vercel from '@astrojs/vercel';
 import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
@@ -11,6 +12,9 @@ export default defineConfig({
 	site: 'https://www.apexenginehq.com',
 	// Matches vercel.json's trailingSlash:true so dev matches the redirect Vercel enforces in prod.
 	trailingSlash: 'always',
+	// Site stays static by default; only routes with `export const prerender = false`
+	// (the PMS-report API + admin moderation) render on-demand via this adapter.
+	adapter: vercel(),
 	// Keep admin/internal routes out of the sitemap (also Disallowed in public/robots.txt).
 	integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/admin/') })],
 	fonts: [

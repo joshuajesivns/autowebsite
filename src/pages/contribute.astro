@@ -1,0 +1,213 @@
+---
+import Layout from '../layouts/Page.astro';
+---
+
+<Layout
+	title="Report Your PMS Cost"
+	description="Tell us what you actually paid for your last PMS — casa or independent shop. Real, owner-reported numbers are what make Apex Engine's cost data different from brochure figures."
+>
+	<h2>What Did Your Last PMS Actually Cost?</h2>
+	<p>
+		Official price sheets are best-case numbers. We want the real ones. Every submission is reviewed before it's used anywhere on the site — this isn't instant, but it keeps the data honest.
+	</p>
+
+	<form id="pms-form" class="pms-form">
+		<!-- Honeypot: hidden from real users, bots tend to fill every field -->
+		<div class="hp-field" aria-hidden="true">
+			<label for="website">Leave this blank</label>
+			<input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+		</div>
+
+		<div class="form-row">
+			<div class="form-group">
+				<label for="make">Make</label>
+				<input type="text" id="make" name="make" required placeholder="Toyota" />
+			</div>
+			<div class="form-group">
+				<label for="model">Model</label>
+				<input type="text" id="model" name="model" required placeholder="Vios" />
+			</div>
+		</div>
+
+		<div class="form-row">
+			<div class="form-group">
+				<label for="modelYear">Model Year</label>
+				<input type="number" id="modelYear" name="modelYear" required min="1990" max="2100" placeholder="2022" />
+			</div>
+			<div class="form-group">
+				<label for="trim">Trim (optional)</label>
+				<input type="text" id="trim" name="trim" placeholder="XLE" />
+			</div>
+		</div>
+
+		<div class="form-row">
+			<div class="form-group">
+				<label for="serviceType">Service Type</label>
+				<select id="serviceType" name="serviceType" required>
+					<option value="">Select one</option>
+					<option value="light">Light / Minor PMS</option>
+					<option value="major">Major / Heavy PMS</option>
+					<option value="other">Other (repair, specific part, etc.)</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label for="serviceLocation">Where Serviced</label>
+				<select id="serviceLocation" name="serviceLocation" required>
+					<option value="">Select one</option>
+					<option value="casa">Official Casa / Dealer</option>
+					<option value="independent">Independent Shop</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="form-row">
+			<div class="form-group">
+				<label for="mileageKm">Mileage at Service (km)</label>
+				<input type="number" id="mileageKm" name="mileageKm" required min="0" placeholder="40000" />
+			</div>
+			<div class="form-group">
+				<label for="amountPhp">Amount Paid (₱)</label>
+				<input type="number" id="amountPhp" name="amountPhp" required min="1" step="0.01" placeholder="8500" />
+			</div>
+		</div>
+
+		<div class="form-row">
+			<div class="form-group">
+				<label for="region">Region / City (optional)</label>
+				<input type="text" id="region" name="region" placeholder="Sta. Rosa, Laguna" />
+			</div>
+			<div class="form-group">
+				<label for="serviceDate">Service Date (optional)</label>
+				<input type="date" id="serviceDate" name="serviceDate" />
+			</div>
+		</div>
+
+		<div class="form-group">
+			<label for="notes">Notes (optional)</label>
+			<textarea id="notes" name="notes" rows="3" placeholder="What was included — parts replaced, promo pricing, anything unusual?"></textarea>
+		</div>
+
+		<button type="submit" class="primary">Submit Report</button>
+		<p id="pms-error" class="error-message" hidden></p>
+	</form>
+
+	<div id="pms-success" class="success-message" hidden>
+		<h4>Thanks — that's genuinely useful</h4>
+		<p>Your report is in the moderation queue. Once we've got enough for your model, it'll feed into our real-cost guides and our upcoming ownership-cost calculator.</p>
+	</div>
+
+	<script>
+		const form = document.getElementById('pms-form');
+		const success = document.getElementById('pms-success');
+		const errorEl = document.getElementById('pms-error');
+
+		if (form && success && errorEl) {
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				errorEl.hidden = true;
+
+				const data = Object.fromEntries(new FormData(form).entries());
+				const payload = {
+					...data,
+					modelYear: Number(data.modelYear),
+					mileageKm: Number(data.mileageKm),
+					amountPhp: Number(data.amountPhp),
+				};
+
+				const submitBtn = form.querySelector('button[type="submit"]');
+				if (submitBtn) submitBtn.disabled = true;
+
+				try {
+					const res = await fetch('/api/pms-report', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify(payload),
+					});
+					const result = await res.json();
+
+					if (!res.ok) {
+						errorEl.textContent = result.error || 'Something went wrong. Please try again.';
+						errorEl.hidden = false;
+						if (submitBtn) submitBtn.disabled = false;
+						return;
+					}
+
+					form.hidden = true;
+					success.hidden = false;
+				} catch {
+					errorEl.textContent = 'Could not reach the server. Please try again.';
+					errorEl.hidden = false;
+					if (submitBtn) submitBtn.disabled = false;
+				}
+			});
+		}
+	</script>
+</Layout>
+
+<style>
+	.pms-form {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25em;
+		margin-top: 2em;
+		max-width: 640px;
+	}
+	.hp-field {
+		position: absolute;
+		left: -9999px;
+	}
+	.form-row {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1.25em;
+	}
+	@media (min-width: 640px) {
+		.form-row {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+	}
+	label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	input, select, textarea {
+		padding: 0.75em;
+		border: 1px solid var(--metal-gray-light);
+		background: var(--paper);
+		font-family: inherit;
+		font-size: 0.95rem;
+	}
+	input:focus-visible, select:focus-visible, textarea:focus-visible {
+		outline: 2px solid var(--accent-color);
+	}
+	.error-message {
+		color: var(--red-mica-dark, #B91C1C);
+		font-size: 0.9rem;
+		font-weight: 700;
+	}
+	.success-message {
+		margin-top: 2em;
+		max-width: 640px;
+		text-align: center;
+		padding: 2em;
+		background: #ECFDF5;
+		border: 1px solid #10B981;
+		color: #065F46;
+	}
+	.success-message h4 {
+		margin-bottom: 0.5em;
+		color: #065F46;
+		text-transform: uppercase;
+	}
+	.success-message p {
+		font-size: 0.95rem;
+		margin: 0;
+	}
+</style>
