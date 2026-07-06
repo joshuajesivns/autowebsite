@@ -9,6 +9,8 @@ export default defineConfig({
 	// Real domain — keep in sync with SITE_URL in src/consts.ts.
 	// NOTE: only merge to production once this domain's DNS points to Vercel.
 	site: 'https://www.apexenginehq.com',
+	// Matches vercel.json's trailingSlash:true so dev matches the redirect Vercel enforces in prod.
+	trailingSlash: 'always',
 	// Keep admin/internal routes out of the sitemap (also Disallowed in public/robots.txt).
 	integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/admin/') })],
 	fonts: [
