@@ -14,9 +14,9 @@ export const GOOGLE_SITE_VERIFICATION = 'HSbvWsGQs2LsqcS746ovWF7VAdN57syR2MZeKmg
 
 // Official profiles — populate as you create them (used for Organization sameAs).
 export const SOCIAL_LINKS: string[] = [
-	// 'https://www.facebook.com/...',
-	// 'https://www.youtube.com/@...',
-	// 'https://www.tiktok.com/@...',
+	'https://www.facebook.com/apexenginehq/',
+	'https://www.instagram.com/apexenginehq/',
+	// 'https://x.com/...',
 ];
 
 // Business identity (NAP) for Organization structured data.
