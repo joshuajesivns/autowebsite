@@ -15,7 +15,12 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const { make, model, yearsProduced, engine, transmission, fuel, seats, bodyType, averageMarketPrice } = entry.data;
+const { make, model, yearsProduced, engine, transmission, fuel, seats, bodyType, averageMarketPrice, metaTitle, metaDescription } = entry.data;
+
+// Prefer hand-tuned SEO copy (see CONTENT_STYLE_GUIDE.md's meta title/description
+// formula); fall back to a generic template for any model missing them.
+const pageTitle = metaTitle ?? `${make} ${model} Reviews, Specs & Guides | Apex Engine`;
+const pageDescription = metaDescription ?? `Read our technical audit, specifications, and buying guides for the ${make} ${model}.`;
 
 // Render markdown body
 const { Content } = await render(entry);
@@ -44,7 +49,7 @@ const relatedBlogs = allBlogs.filter((post) => {
 <!doctype html>
 <html lang="en-PH">
 	<head>
-		<BaseHead title={`${make} ${model} Reviews, Specs & Guides | Apex Engine`} description={`Read our technical audit, specifications, and buying guides for the ${make} ${model}.`} />
+		<BaseHead title={pageTitle} description={pageDescription} />
 	</head>
 	<body>
 		<Header />

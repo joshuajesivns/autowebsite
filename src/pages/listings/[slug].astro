@@ -29,7 +29,11 @@ const recommendations = listings
 <!doctype html>
 <html lang="en-PH">
 	<head>
-		<BaseHead title={`${car.year} ${car.make} ${car.model} | Apex Engine`} description={car.description} image={car.image} />
+		{/* Title follows the meta-title formula's shape (power word + keyword + " - Apex Engine")
+		    but can't be exactly char-counted since make/model length varies — this page isn't
+		    generated while LISTINGS_LIVE is false, so revisit exact tuning once real inventory
+		    replaces the mock data. */}
+		<BaseHead title={`Verified ${car.year} ${car.make} ${car.model} - Apex Engine`} description={car.description} image={car.image} />
 		<script type="application/ld+json" is:inline set:html={JSON.stringify({
 			"@context": "https://schema.org",
 			"@type": "Product",

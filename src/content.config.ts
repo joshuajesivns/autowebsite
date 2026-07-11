@@ -36,6 +36,11 @@ const models = defineCollection({
 			averageMarketPrice: z.string(),
 			heroImage: z.optional(image()),
 			category: z.string().optional(), // e.g. sports, kei-truck, sedan, van
+			// Optional SEO overrides — falls back to a generic template in
+			// models/[slug].astro when omitted. Follow the meta title/description
+			// formula in CONTENT_STYLE_GUIDE.md when setting these.
+			metaTitle: z.string().optional(),
+			metaDescription: z.string().optional(),
 		}),
 });
 

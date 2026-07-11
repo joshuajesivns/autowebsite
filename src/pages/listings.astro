@@ -3,14 +3,22 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import VehicleSpecCard from '../components/VehicleSpecCard.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import { listings, makes, modelsByMake, CATEGORIES, LISTINGS_LIVE } from '../data/listings';
+
+// See CONTENT_STYLE_GUIDE.md's meta title/description formula — these two
+// variants must each independently satisfy the 55-58 / 155-158 char rule.
+const pageTitle = LISTINGS_LIVE
+	? 'Verified Used Car Inventory Listings in PH - Apex Engine'
+	: 'Trusted Used Car Inventory Launching Soon - Apex Engine';
+const pageDescription = LISTINGS_LIVE
+	? "Apex Engine's inventory ships with a verified odometer, Japan auction grade, and full inspection report on every unit sold. Browse the verified listings now."
+	: "Apex Engine's verified inventory is launching soon — every unit ships with a verified odometer, Japan auction grade, and a full inspection report. Stay tuned.";
 ---
 
 <!doctype html>
 <html lang="en-PH">
 	<head>
-		<BaseHead title={LISTINGS_LIVE ? `Listings | ${SITE_TITLE}` : `Inventory — Coming Soon | ${SITE_TITLE}`} description={LISTINGS_LIVE ? SITE_DESCRIPTION : 'Our verified, fully-documented inventory is launching soon. Every machine ships with a verified odometer, Japan auction grade, and inspection report.'} />
+		<BaseHead title={pageTitle} description={pageDescription} />
 	</head>
 	<body>
 		<Header />
