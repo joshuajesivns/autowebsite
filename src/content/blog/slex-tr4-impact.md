@@ -1,6 +1,6 @@
 ---
-title: "The SLEX TR4 Extension: How It's Shifting Used Car Prices in Batangas and Quezon"
-description: "With the SLEX TR4 project reaching Tiaong and beyond, we analyze the surge in vehicle demand and price shifts in the South Luzon second-hand market."
+title: "True SLEX TR4 Extension Impact on Car Prices - Apex Engine"
+description: "Apex Engine examines how the SLEX TR4 extension is reshaping South Luzon car prices, from SUV demand to the RFID-ready buying trend. Read the full analysis."
 pubDate: "Jun 10 2026"
 heroImage: "../../assets/blog-placeholder-2.jpg"
 ---

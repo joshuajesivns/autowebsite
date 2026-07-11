@@ -42,6 +42,20 @@ promise, not a different brand.
   phrasing every time. Cluster posts link up to their pillar; siblings
   cross-link only where genuinely relevant (e.g. Fortuner ↔ Montero Sport
   as diesel-SUV rivals).
+- [ ] **Meta title formula (2026-07-11):** `{Power word} {Target keyword} -
+  Apex Engine`, **55–58 characters total**. The `" - Apex Engine"` suffix is
+  a fixed 14 characters, leaving ~41–44 characters for the power word +
+  keyword. Power word first (e.g. "Complete," "Real," "Honest," "Ultimate,"
+  "Essential," "True"), then the keyword a searcher would actually type —
+  not a clever or branded phrase. Vary the power word across posts; don't
+  let every title open the same way.
+- [ ] **Meta description formula (2026-07-11):** **155–158 characters
+  total.** A one-sentence, honest summary of the post's actual content,
+  mentioning **"Apex Engine" exactly once**, ending with a short, punchy CTA
+  to read the full post (e.g. "See the full breakdown." / "Read the full
+  guide."). **Always verify the exact character count with a script before
+  publishing — do not eyeball it.** A title or description outside its
+  range is a bug, same as a missing required section.
 
 ## Vertical A — Daily Driver (PMS cluster: Vios, Wigo, City, Mirage, etc.)
 
