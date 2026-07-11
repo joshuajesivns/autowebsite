@@ -132,9 +132,10 @@ Vertical A and flag the ambiguity rather than guessing silently.
 
 ## Known retrofit debt (as of 2026-07-11)
 
-- **Retrofit required:** all 14 existing PMS-cluster posts are missing the
-  Model Year Coverage section (the requirement was added after they were
-  written and never backfilled).
-- **Retrofit required:** the pillar-link anchor "PMS pillar" is repeated
-  verbatim across multiple PMS posts — needs varied phrasing per the shared
-  anchor rule.
+- **Resolved:** all 14 original PMS-cluster posts, plus BYD Seal 5 (EV
+  vertical), now have the Model Year Coverage section. Retrofitted in a
+  parallel pass alongside Ford Everest/Ranger and BYD Seagull, which already
+  had it from launch.
+- **Resolved:** the literal "PMS pillar" anchor no longer appears anywhere in
+  `src/content/blog/` — every occurrence was replaced with distinct, natural
+  phrasing per the shared anchor-diversity rule.
