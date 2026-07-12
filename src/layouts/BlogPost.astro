@@ -5,40 +5,47 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import { SITE_URL } from '../consts';
+import { buildBlogGraph, showsProducts } from '../lib/schema';
 import '../styles/apex.css';
 
 type Props = CollectionEntry<'blog'>['data'];
 
-const { title, description, pubDate, updatedDate, heroImage, faq } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, faq, tags, vertical, vehicle, pms, featuredProducts } =
+	Astro.props;
+
+// ── Structured data ────────────────────────────────────────────────────────
+// The whole @graph is assembled by the shared engine in src/lib/schema.ts, which
+// picks the entity mix from `vertical`. We only resolve the Astro-specific bits
+// (absolute canonical URL + processed hero image path) and hand it plain data.
+const siteHref = Astro.site?.href ?? `${SITE_URL}/`; // trailing slash (astro trailingSlash:'always')
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href; // canonical, trailing slash
+const graph = buildBlogGraph({
+	vertical,
+	title,
+	description,
+	pageUrl,
+	siteHref,
+	imageUrl: heroImage ? new URL(heroImage.src, Astro.url).href : undefined,
+	datePublished: pubDate.toISOString(),
+	dateModified: (updatedDate || pubDate).toISOString(),
+	tags,
+	faq,
+	vehicle,
+	pms,
+	featuredProducts,
+});
+
+// Visible product section renders under the same rule the schema uses, so the
+// cards and the ItemList markup can never disagree.
+const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredProducts.length);
 ---
 
 <html lang="en-PH">
 	<head>
 		<BaseHead title={title} description={description} />
-		<script type="application/ld+json" is:inline set:html={JSON.stringify({
-			"@context": "https://schema.org",
-			"@type": "BlogPosting",
-			"headline": title,
-			"description": description,
-			"image": heroImage ? new URL(heroImage.src, Astro.url) : undefined,
-			"datePublished": pubDate.toISOString(),
-			"dateModified": (updatedDate || pubDate).toISOString(),
-			"author": {
-				"@type": "Organization",
-				"name": "Apex Engine Editorial Team"
-			}
-		})} />
-		{faq && faq.length > 0 && (
-			<script type="application/ld+json" is:inline set:html={JSON.stringify({
-				"@context": "https://schema.org",
-				"@type": "FAQPage",
-				"mainEntity": faq.map((item) => ({
-					"@type": "Question",
-					"name": item.q,
-					"acceptedAnswer": { "@type": "Answer", "text": item.a },
-				})),
-			})} />
-		)}
+		<!-- One linked @graph: Article + Vehicle + FAQPage (+ Products when present) -->
+		<script type="application/ld+json" is:inline set:html={JSON.stringify(graph)} />
 	</head>
 
 	<body>
@@ -73,7 +80,25 @@ const { title, description, pubDate, updatedDate, heroImage, faq } = Astro.props
                     
                     <div class="prose">
                         <slot />
-                        
+
+                        {showProducts && (
+                            <section class="products">
+                                <h2>Recommended Parts & Upgrades</h2>
+                                <p class="affiliate-disclosure">Some links below are affiliate links — we may earn a small commission at no extra cost to you. We only recommend parts we'd fit ourselves.</p>
+                                <div class="product-grid">
+                                    {featuredProducts.map((p) => (
+                                        <a class="product-card" href={p.url} rel="sponsored nofollow noopener" target="_blank">
+                                            {p.category && <span class="product-cat">{p.category}</span>}
+                                            <h3>{p.name}</h3>
+                                            {p.brand && <span class="product-brand">{p.brand}</span>}
+                                            {p.description && <p>{p.description}</p>}
+                                            <span class="product-cta">View part →</span>
+                                        </a>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
                         {faq && faq.length > 0 && (
                             <section class="faq">
                                 <h2>Frequently Asked Questions</h2>
@@ -293,6 +318,69 @@ const { title, description, pubDate, updatedDate, heroImage, faq } = Astro.props
         margin: 0;
         font-size: 0.95rem;
         color: var(--metal-gray);
+    }
+
+    /* Recommended products — visible cards paired with ItemList/Product schema.
+       Both render from the same `featuredProducts` frontmatter, so schema never
+       describes a product the reader can't see. */
+    .products {
+        margin-top: 3em;
+        border-top: 4px solid var(--black-mica);
+        padding-top: 1.5em;
+    }
+    .products h2 {
+        font-size: 1.5rem;
+        text-transform: uppercase;
+        margin-bottom: 0.5em;
+    }
+    .affiliate-disclosure {
+        font-size: 0.85rem;
+        color: var(--metal-gray);
+        margin-bottom: 1.5em;
+    }
+    .product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1em;
+    }
+    .product-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35em;
+        background: var(--paper-off);
+        border-left: 4px solid var(--red-mica);
+        padding: 1.25em;
+        text-decoration: none;
+        color: var(--black-mica-2);
+        transition: transform 0.15s ease;
+    }
+    .product-card:hover {
+        transform: translateY(-2px);
+    }
+    .product-card h3 {
+        font-size: 1.05rem;
+        margin: 0;
+    }
+    .product-cat {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--red-mica);
+        font-weight: 700;
+    }
+    .product-brand {
+        font-size: 0.85rem;
+        color: var(--metal-gray);
+    }
+    .product-card p {
+        font-size: 0.9rem;
+        margin: 0.25em 0 0;
+    }
+    .product-cta {
+        margin-top: auto;
+        padding-top: 0.5em;
+        font-weight: 700;
+        color: var(--red-mica);
     }
 
     /* FAQ — visible Q&A, paired with FAQPage schema for AI Overviews */

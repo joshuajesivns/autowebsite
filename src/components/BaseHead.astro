@@ -26,9 +26,14 @@ const addressFields = {
 	...(ORG.addressRegion ? { addressRegion: ORG.addressRegion } : {}),
 	...(ORG.addressCountry ? { addressCountry: ORG.addressCountry } : {}),
 };
+// Stable @ids so per-page graphs (e.g. a blog post's BlogPosting) can cross-reference
+// these site-wide entities instead of re-declaring them. Base ends in "/" so `${site}#org`
+// → "https://www.apexenginehq.com/#org".
+const orgId = `${site}#org`;
+const webSiteId = `${site}#website`;
 const orgSchema = {
-	'@context': 'https://schema.org',
 	'@type': 'Organization',
+	'@id': orgId,
 	name: SITE_TITLE,
 	url: site,
 	logo: new URL('/favicon-512.png', site).href,
@@ -36,6 +41,18 @@ const orgSchema = {
 	...(ORG.telephone ? { telephone: ORG.telephone } : {}),
 	...(Object.keys(addressFields).length ? { address: { '@type': 'PostalAddress', ...addressFields } } : {}),
 	...(SOCIAL_LINKS.length ? { sameAs: SOCIAL_LINKS } : {}),
+};
+const webSiteSchema = {
+	'@type': 'WebSite',
+	'@id': webSiteId,
+	name: SITE_TITLE,
+	url: site,
+	publisher: { '@id': orgId },
+};
+// One site-wide @graph carrying both identity entities.
+const siteSchema = {
+	'@context': 'https://schema.org',
+	'@graph': [orgSchema, webSiteSchema],
 };
 ---
 
@@ -60,8 +77,8 @@ const orgSchema = {
 	<meta name="google-site-verification" content={GOOGLE_SITE_VERIFICATION} />
 )}
 
-<!-- Organization entity (site-wide) -->
-<script type="application/ld+json" is:inline set:html={JSON.stringify(orgSchema)} />
+<!-- Site-wide identity: Organization + WebSite (cross-linked by @id) -->
+<script type="application/ld+json" is:inline set:html={JSON.stringify(siteSchema)} />
 
 <Font cssVariable="--font-atkinson" preload />
 

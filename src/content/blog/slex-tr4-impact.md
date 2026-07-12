@@ -1,4 +1,5 @@
 ---
+vertical: "news"
 title: "True SLEX TR4 Extension Impact on Car Prices - Apex Engine"
 description: "Apex Engine examines how the SLEX TR4 extension is reshaping South Luzon car prices, from SUV demand to the RFID-ready buying trend. Read the full analysis."
 pubDate: "Jun 10 2026"
