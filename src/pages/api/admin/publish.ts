@@ -1,18 +1,37 @@
 import type { APIRoute } from 'astro';
+import { getCollection } from 'astro:content';
 import { ADMIN_COOKIE_NAME, isValidAdminSession } from '../../../lib/adminAuth';
 import { commitFiles, createBlob, fileExists, GH_BRANCH, type TreeEntry } from '../../../lib/github';
 import {
+	analyzePost,
+	applyAltText,
 	applyUploads,
 	assetRepoPath,
+	buildPreview,
 	detectImageSlots,
 	extOf,
 	parsePost,
 	slugify,
+	type AltMap,
+	type PostIndexEntry,
 	type UploadMap,
 	validatePost,
 } from '../../../lib/publish';
 
 export const prerender = false;
+
+/** Lightweight index of existing posts for the slug-taken check + link suggestions.
+ *  Uses the content collection (no GitHub token needed). */
+async function postIndex(): Promise<PostIndexEntry[]> {
+	const posts = await getCollection('blog');
+	return posts.map((p) => ({
+		slug: p.id.replace(/\.(md|mdx)$/, ''),
+		title: p.data.title,
+		vertical: p.data.vertical,
+		tags: p.data.tags ?? [],
+		brand: p.data.vehicle?.brand,
+	}));
+}
 
 const json = (data: unknown, status = 200) =>
 	new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
@@ -35,13 +54,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 	const action = payload?.action;
 
 	try {
-		// ── SCAN: validate frontmatter + list image slots ──────────────────────
+		// ── SCAN: validate + full Yoast-lite analysis (token-free) ──────────────
 		if (action === 'scan') {
 			const mdx = String(payload.mdx ?? '');
 			const parsed = parsePost(mdx);
 			const errors = validatePost(parsed);
 			const slug = parsed.meta.title ? slugify(parsed.meta.title) : '';
-			const taken = slug ? await fileExists(`${BLOG_DIR}/${slug}.mdx`) : false;
+			const posts = await postIndex();
+			const taken = slug ? posts.some((p) => p.slug === slug) : false;
 			return json({
 				ok: errors.length === 0,
 				errors,
@@ -49,6 +69,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 				slug,
 				slugTaken: taken,
 				slots: detectImageSlots(parsed),
+				preview: buildPreview(parsed, `${SITE}/blog/${slug || 'your-post'}/`),
+				analysis: analyzePost(parsed, posts, slug),
 			});
 		}
 
@@ -93,7 +115,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 				entries.push({ path: assetRepoPath(slug, `${name}.${ext}`), sha: u.sha });
 			}
 
-			const finalMdx = applyUploads(mdx, slug, uploadMap);
+			// Rewrite image paths for uploaded slots, then bake in alt text.
+			let finalMdx = applyUploads(mdx, slug, uploadMap);
+			const alts: AltMap | undefined = payload.alts;
+			if (alts && (alts.hero != null || alts.body)) {
+				finalMdx = applyAltText(finalMdx, { hero: alts.hero, body: alts.body ?? {} });
+			}
 			entries.push({ path: `${BLOG_DIR}/${slug}.mdx`, content: finalMdx });
 
 			const imgCount = entries.length - 1;

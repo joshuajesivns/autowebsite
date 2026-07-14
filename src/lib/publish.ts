@@ -91,6 +91,7 @@ export interface ImageSlot {
 	currentPath: string; // the placeholder path currently referenced
 	caption?: string; // best-effort, to help identify the slot
 	isPlaceholder: boolean;
+	alt: string; // current alt text ('' if none) — heroAlt for the hero, alt="…" on the tag for body images
 }
 
 /**
@@ -107,6 +108,7 @@ export function detectImageSlots(p: ParsedPost): ImageSlot[] {
 			currentPath: p.meta.heroImage,
 			caption: 'Hero image (top of the post)',
 			isPlaceholder: /placeholder/i.test(p.meta.heroImage),
+			alt: heroAltOf(p.frontmatter),
 		});
 	}
 	const importRe = /^import\s+(\w+)\s+from\s+['"]([^'"]+)['"];?\s*$/gm;
@@ -120,9 +122,25 @@ export function detectImageSlots(p: ParsedPost): ImageSlot[] {
 			currentPath: path,
 			caption: findCaptionFor(p.body, name),
 			isPlaceholder: /placeholder/i.test(path),
+			alt: findAltFor(p.body, name),
 		});
 	}
 	return slots;
+}
+
+/** Read the heroAlt frontmatter scalar ('' if absent). */
+function heroAltOf(frontmatter: string): string {
+	const r = frontmatter.match(/^heroAlt:\s*(?:"([^"]*)"|'([^']*)'|([^\n#]*?))\s*(?:#.*)?$/m);
+	return r ? (r[1] ?? r[2] ?? r[3] ?? '').trim() : '';
+}
+
+/** Read the existing alt="…" on the <Figure>/<Split> that uses this image variable ('' if none). */
+function findAltFor(body: string, name: string): string {
+	const use = new RegExp(`(?:src|image)=\\{${name}\\}`).exec(body);
+	if (!use) return '';
+	const window = body.slice(use.index, use.index + 400);
+	const alt = window.match(/\balt=["']([^"']*)["']/);
+	return alt ? alt[1] : '';
 }
 
 /** Look for a caption on the tag that uses this image variable. Best-effort. */
@@ -171,4 +189,296 @@ export function applyUploads(mdx: string, slug: string, uploads: UploadMap): str
 export function extOf(filename: string): string {
 	const m = filename.match(/\.([a-z0-9]+)$/i);
 	return (m ? m[1] : 'jpg').toLowerCase();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Yoast-lite analysis. Pure functions: the API route feeds them the parsed post
+// plus a lightweight index of existing posts (from getCollection) and renders the
+// result as a Google preview + traffic-light checklist. Advisory only — none of
+// this blocks a publish; hard blockers stay in validatePost().
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { RECIPE, type Vertical as SchemaVertical } from './schema';
+
+// The site's meta formula (mirrors CONTENT_STYLE_GUIDE.md).
+export const TITLE_MIN = 55;
+export const TITLE_MAX = 58;
+export const DESC_MIN = 155;
+export const DESC_MAX = 158;
+
+export type Level = 'good' | 'warn' | 'bad';
+export interface Check {
+	level: Level;
+	text: string;
+}
+export interface SchemaNode {
+	label: string;
+	level: Level;
+}
+export interface Preview {
+	titleFull: string;
+	url: string;
+	description: string;
+	titleLen: number;
+	titleState: Level;
+	descLen: number;
+	descState: Level;
+	apexCount: number;
+	apexState: Level;
+}
+export interface Analysis {
+	content: Check[];
+	images: Check[];
+	schema: { nodes: SchemaNode[]; notes: Check[] };
+	links: { count: number; targets: string[]; suggestions: PostIndexEntry[]; checks: Check[] };
+}
+export interface PostIndexEntry {
+	slug: string;
+	title: string;
+	vertical: string;
+	tags: string[];
+	brand?: string;
+}
+
+/** Character-count state against a [min,max] window, with a small orange tolerance band. */
+export function lengthState(len: number, min: number, max: number, tol = 4): Level {
+	if (len >= min && len <= max) return 'good';
+	if (len >= min - tol && len <= max + tol) return 'warn';
+	return 'bad';
+}
+
+/** The Google-snippet preview + live meta bars. */
+export function buildPreview(parsed: ParsedPost, url: string): Preview {
+	const title = parsed.meta.title ?? '';
+	const description = parsed.meta.description ?? '';
+	const titleLen = [...title].length;
+	const descLen = [...description].length;
+	const apexCount = (description.match(/Apex Engine/g) ?? []).length;
+	return {
+		titleFull: title,
+		url,
+		description,
+		titleLen,
+		titleState: lengthState(titleLen, TITLE_MIN, TITLE_MAX),
+		descLen,
+		descState: lengthState(descLen, DESC_MIN, DESC_MAX),
+		apexCount,
+		apexState: apexCount === 1 ? 'good' : 'warn',
+	};
+}
+
+// ── Frontmatter extras the scalar parser doesn't reach (nested blocks) ────────
+interface Extras {
+	vehiclePresent: boolean;
+	vehicleName?: string;
+	vehicleBrand?: string;
+	vehicleModel?: string;
+	engineCount: number;
+	faqCount: number;
+	hasPms: boolean;
+	hasProducts: boolean;
+	tags: string[];
+}
+
+/** Grab the indented lines under a top-level `key:` (up to the next top-level key). */
+function indentedBlock(fm: string, key: string): string | null {
+	const lines = fm.split('\n');
+	const i = lines.findIndex((l) => new RegExp(`^${key}:`).test(l));
+	if (i === -1) return null;
+	const out: string[] = [];
+	for (let j = i + 1; j < lines.length; j++) {
+		if (/^\S/.test(lines[j])) break; // next top-level key
+		out.push(lines[j]);
+	}
+	return out.join('\n');
+}
+
+function scalarIn(block: string, key: string): string | undefined {
+	const r = block.match(new RegExp(`^\\s*${key}:\\s*(?:"([^"]*)"|'([^']*)'|([^\\n#]*?))\\s*(?:#.*)?$`, 'm'));
+	return r ? (r[1] ?? r[2] ?? r[3] ?? '').trim() || undefined : undefined;
+}
+
+export function parseExtras(fm: string): Extras {
+	const vehicle = indentedBlock(fm, 'vehicle');
+	const faq = indentedBlock(fm, 'faq');
+	const tagsLine = fm.match(/^tags:\s*(.*)$/m);
+	const tags = tagsLine ? [...tagsLine[1].matchAll(/["']([^"']+)["']/g)].map((m) => m[1]) : [];
+	return {
+		vehiclePresent: vehicle != null,
+		vehicleName: vehicle ? scalarIn(vehicle, 'name') : undefined,
+		vehicleBrand: vehicle ? scalarIn(vehicle, 'brand') : undefined,
+		vehicleModel: vehicle ? scalarIn(vehicle, 'model') : undefined,
+		engineCount: vehicle ? (vehicle.match(/^\s*-\s*name:/gm) ?? []).length : 0,
+		faqCount: faq ? (faq.match(/^\s*-\s*q:/gm) ?? []).length : 0,
+		hasPms: /^pms:\s*$/m.test(fm),
+		hasProducts: /^featuredProducts:\s*$/m.test(fm),
+		tags,
+	};
+}
+
+// ── Required-section heuristics per vertical (matched against H2/H3 headings) ──
+const SHARED_SECTIONS: { label: string; re: RegExp }[] = [
+	{ label: 'Model Year Coverage', re: /model year coverage/i },
+	{ label: 'Key Takeaways', re: /key takeaways/i },
+];
+const VERTICAL_SECTIONS: Record<string, { label: string; re: RegExp }[]> = {
+	'daily-driver': [
+		{ label: 'Quick Specs', re: /quick specs|specs/i },
+		{ label: 'Light vs. Heavy PMS', re: /light|heavy|pms/i },
+		{ label: 'Known Issues', re: /known issue|problem/i },
+	],
+	ev: [
+		{ label: 'Battery / range / charging', re: /battery|range|charg/i },
+		{ label: 'Warranty', re: /warranty/i },
+		{ label: 'TCO vs. gasoline', re: /tco|cost of ownership|total cost|cost-per-km/i },
+	],
+	jdm: [
+		{ label: 'Upgrade paths', re: /upgrade|build|mod/i },
+		{ label: 'Parts availability / sourcing', re: /parts|sourcing/i },
+		{ label: 'Known weak points', re: /weak point|known issue|reliab/i },
+		{ label: 'Buying / import guide', re: /buying|import|inspect/i },
+		{ label: 'Resale / collector value', re: /resale|collector|value|verdict/i },
+	],
+	news: [],
+};
+
+function headingsOf(body: string): string {
+	return [...body.matchAll(/^#{2,3}\s+(.*)$/gm)].map((m) => m[1]).join('\n');
+}
+
+/** Everything the traffic-light panel renders. Advisory only. */
+export function analyzePost(parsed: ParsedPost, posts: PostIndexEntry[], currentSlug: string): Analysis {
+	const ex = parseExtras(parsed.frontmatter);
+	const vertical = parsed.meta.vertical ?? '';
+	const headings = headingsOf(parsed.body);
+
+	// ── Content ──────────────────────────────────────────────────────────────
+	const content: Check[] = [];
+	const t = [...(parsed.meta.title ?? '')].length;
+	const d = [...(parsed.meta.description ?? '')].length;
+	content.push({
+		level: lengthState(t, TITLE_MIN, TITLE_MAX),
+		text: `SEO title: ${t} chars (aim ${TITLE_MIN}–${TITLE_MAX}).`,
+	});
+	content.push({
+		level: lengthState(d, DESC_MIN, DESC_MAX),
+		text: `Meta description: ${d} chars (aim ${DESC_MIN}–${DESC_MAX}).`,
+	});
+	const apex = (parsed.meta.description?.match(/Apex Engine/g) ?? []).length;
+	content.push({
+		level: apex === 1 ? 'good' : 'warn',
+		text: apex === 1 ? '"Apex Engine" appears once in the description.' : `"Apex Engine" appears ${apex}× in the description (want exactly 1).`,
+	});
+	for (const s of [...SHARED_SECTIONS, ...(VERTICAL_SECTIONS[vertical] ?? [])]) {
+		content.push({
+			level: s.re.test(headings) ? 'good' : 'warn',
+			text: s.re.test(headings) ? `Section present: ${s.label}.` : `Missing (or unusually named) section: ${s.label}.`,
+		});
+	}
+	content.push({
+		level: ex.faqCount >= 3 ? 'good' : ex.faqCount >= 1 ? 'warn' : 'warn',
+		text: ex.faqCount ? `FAQ: ${ex.faqCount} Q&A${ex.faqCount > 1 ? 's' : ''} → FAQPage schema.` : 'No FAQ entries — add a few for the FAQ section + schema.',
+	});
+
+	// ── Images + alt ───────────────────────────────────────────────────────────
+	const slots = detectImageSlots(parsed);
+	const images: Check[] = [];
+	if (!slots.some((s) => s.kind === 'hero')) images.push({ level: 'warn', text: 'No hero image set.' });
+	for (const s of slots) {
+		const label = s.kind === 'hero' ? 'Hero' : s.id;
+		if (!s.alt.trim()) images.push({ level: 'warn', text: `Missing alt text: ${label}.` });
+		if (s.isPlaceholder) images.push({ level: 'warn', text: `Still on placeholder image: ${label}.` });
+	}
+	if (slots.length && images.length === 0) images.push({ level: 'good', text: 'All images have alt text and real photos.' });
+	if (slots.every((s) => s.alt.trim()) && slots.length) images.push({ level: 'good', text: 'Every image has alt text.' });
+
+	// ── Schema (reuses the real RECIPE from schema.ts) ─────────────────────────
+	const recipe = RECIPE[vertical as SchemaVertical];
+	const nodes: SchemaNode[] = [{ label: 'Article (BlogPosting)', level: 'good' }];
+	const notes: Check[] = [];
+	if (recipe?.vehicle) {
+		if (ex.vehiclePresent) {
+			const complete = !!(ex.vehicleName && ex.vehicleBrand && ex.vehicleModel);
+			nodes.push({
+				label: `Vehicle${ex.engineCount ? ` (${ex.engineCount} engine${ex.engineCount > 1 ? 's' : ''})` : ''}`,
+				level: complete ? 'good' : 'bad',
+			});
+			if (!complete) notes.push({ level: 'bad', text: 'Vehicle block is missing name/brand/model.' });
+			notes.push({ level: 'warn', text: 'Vehicle shows a cosmetic "Product snippet" notice in Rich Results Test — harmless, does not affect indexing.' });
+		} else {
+			nodes.push({ label: 'Vehicle (none — vertical supports it)', level: 'warn' });
+		}
+	}
+	nodes.push({ label: `FAQPage${ex.faqCount ? ` (${ex.faqCount})` : ''}`, level: ex.faqCount ? 'good' : 'warn' });
+	if (recipe?.howto && ex.hasPms) nodes.push({ label: 'HowTo (PMS)', level: 'good' });
+	if (recipe?.products && ex.hasProducts) nodes.push({ label: 'ItemList / Product', level: 'good' });
+
+	// ── Internal linking ───────────────────────────────────────────────────────
+	const targets = [...parsed.body.matchAll(/\]\((\/(?:blog|models)\/[^)\s]+)\)/g)].map((m) => m[1]);
+	const linkedSlugs = new Set(targets.map((h) => (h.match(/\/blog\/([^/]+)/) ?? [])[1]).filter(Boolean));
+	const checks: Check[] = [];
+	checks.push({
+		level: targets.length >= 2 ? 'good' : targets.length === 1 ? 'warn' : 'bad',
+		text: targets.length ? `${targets.length} internal link${targets.length > 1 ? 's' : ''} in the body.` : 'No internal links — add at least one to a related post.',
+	});
+	const brand = (ex.vehicleBrand ?? '').toLowerCase();
+	const myTags = new Set(ex.tags.map((x) => x.toLowerCase()));
+	const suggestions = posts
+		.filter((p) => p.slug !== currentSlug && !linkedSlugs.has(p.slug))
+		.map((p) => {
+			let score = 0;
+			if (p.vertical === vertical) score += 2;
+			if (brand && (p.brand?.toLowerCase() === brand || p.tags.some((x) => x.toLowerCase() === brand))) score += 3;
+			score += p.tags.filter((x) => myTags.has(x.toLowerCase())).length;
+			return { p, score };
+		})
+		.filter((x) => x.score > 0)
+		.sort((a, b) => b.score - a.score)
+		.slice(0, 5)
+		.map((x) => x.p);
+	if (suggestions.length) checks.push({ level: 'warn', text: `${suggestions.length} related post${suggestions.length > 1 ? 's' : ''} you could link (see below).` });
+
+	return { content, images, schema: { nodes, notes }, links: { count: targets.length, targets, suggestions, checks } };
+}
+
+// ── Alt-text injection (applied at publish, independent of image uploads) ──────
+export interface AltMap {
+	hero?: string;
+	body: Record<string, string>; // import name → alt text
+}
+
+/** Write alt text into the post: heroAlt in frontmatter, alt="…" on each body tag. */
+export function applyAltText(mdx: string, alts: AltMap): string {
+	const p = parsePost(mdx);
+	if (!p.ok) return mdx;
+	let frontmatter = p.frontmatter;
+	let body = p.body;
+
+	if (alts.hero != null && alts.hero !== '') {
+		const esc = alts.hero.replace(/"/g, '&quot;');
+		if (/^heroAlt:/m.test(frontmatter)) {
+			frontmatter = frontmatter.replace(/^heroAlt:.*$/m, `heroAlt: "${esc}"`);
+		} else if (/^heroImage:/m.test(frontmatter)) {
+			frontmatter = frontmatter.replace(/^(heroImage:.*)$/m, `$1\nheroAlt: "${esc}"`);
+		}
+	}
+
+	for (const [name, alt] of Object.entries(alts.body)) {
+		if (!alt) continue;
+		const esc = alt.replace(/"/g, '&quot;');
+		const use = new RegExp(`((?:src|image)=\\{${name}\\})`);
+		const m = use.exec(body);
+		if (!m) continue;
+		// Find the enclosing tag and set/replace its alt attribute.
+		const tagStart = body.lastIndexOf('<', m.index);
+		const tagEnd = body.indexOf('>', m.index);
+		if (tagStart === -1 || tagEnd === -1) continue;
+		let tag = body.slice(tagStart, tagEnd);
+		tag = /\balt=["'][^"']*["']/.test(tag)
+			? tag.replace(/\balt=["'][^"']*["']/, `alt="${esc}"`)
+			: tag.replace(use, `$1 alt="${esc}"`);
+		body = body.slice(0, tagStart) + tag + body.slice(tagEnd);
+	}
+
+	return `---\n${frontmatter}\n---\n${body}`;
 }

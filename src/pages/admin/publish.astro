@@ -9,10 +9,10 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 }
 ---
 
-<PageLayout title="Publish a Post" description="Paste an AI-written MDX article and publish it to Apex Engine.">
+<PageLayout title="Publish a Post" description="Paste an AI-written MDX article, review its SEO/schema/links, and publish it to Apex Engine.">
 	<p class="lede">
-		Paste the finished MDX from your prompt-builder workflow, click <strong>Scan</strong> to check it and
-		list its images, attach photos where you want them, then <strong>Publish</strong>. A bad paste can't
+		Paste the finished MDX, click <strong>Analyze</strong> for the Google preview + checks (content, images/alt,
+		schema, internal links), fill in alt text and attach photos, then <strong>Publish</strong>. A bad paste can't
 		break the live site — a failed build just keeps the last good version.
 	</p>
 
@@ -20,13 +20,23 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	<textarea id="mdx" placeholder="Paste the full MDX (--- frontmatter --- then the body)…" spellcheck="false"></textarea>
 
 	<div class="row">
-		<button id="scanBtn" type="button" class="primary">Scan</button>
+		<button id="scanBtn" type="button" class="primary">Analyze</button>
 		<span id="scanMsg" class="muted"></span>
 	</div>
 
 	<section id="report" hidden>
 		<div id="errors"></div>
-		<div id="meta" class="meta-box"></div>
+
+		<!-- Google snippet preview (Yoast-style) -->
+		<div id="serp" class="serp" hidden>
+			<div class="serp-title" id="serpTitle"></div>
+			<div class="serp-url" id="serpUrl"></div>
+			<div class="serp-desc" id="serpDesc"></div>
+		</div>
+		<div id="bars" class="bars" hidden></div>
+
+		<!-- Traffic-light analysis -->
+		<div id="panels" class="panels" hidden></div>
 
 		<div class="field-group" id="slugGroup" hidden>
 			<label class="field-label" for="slug">Slug (the URL: /blog/<span id="slugEcho">…</span>/)</label>
@@ -35,8 +45,8 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		</div>
 
 		<div id="slotsWrap" hidden>
-			<h2 class="section-h">Images</h2>
-			<p class="muted">Attach a photo to any slot to replace its placeholder. Leave blank to keep the placeholder. Photos are auto-resized and converted to WebP before upload.</p>
+			<h2 class="section-h">Images &amp; alt text</h2>
+			<p class="muted">Write alt text for every image (accessibility + image SEO). Attach a photo to replace a placeholder, or leave blank to keep it. Photos are auto-resized and converted to WebP before upload.</p>
 			<div id="slots"></div>
 		</div>
 
@@ -51,11 +61,12 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 
 <script>
 	const $ = (id) => document.getElementById(id);
-	let scanned = null; // { slug, slots }
+	let scanned = null; // { slots }
 
 	function esc(s) {
 		return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 	}
+	const DOT = { good: '🟢', warn: '🟠', bad: '🔴' };
 
 	async function api(body) {
 		const res = await fetch('/api/admin/publish', {
@@ -66,7 +77,6 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		return res.json();
 	}
 
-	// Downscale to <= 2000px on the long edge and re-encode as WebP, then base64.
 	async function fileToWebpBase64(file, maxDim = 2000, quality = 0.85) {
 		const bitmap = await createImageBitmap(file);
 		const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
@@ -83,36 +93,92 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		return btoa(bin);
 	}
 
+	function checkList(checks) {
+		if (!checks || !checks.length) return '';
+		return '<ul class="checks">' + checks.map((c) => `<li class="lv-${c.level}"><span class="dot">${DOT[c.level]}</span>${esc(c.text)}</li>`).join('') + '</ul>';
+	}
+	function tally(checks) {
+		const c = { good: 0, warn: 0, bad: 0 };
+		(checks || []).forEach((x) => c[x.level]++);
+		const parts = [];
+		if (c.good) parts.push(`🟢 ${c.good}`);
+		if (c.warn) parts.push(`🟠 ${c.warn}`);
+		if (c.bad) parts.push(`🔴 ${c.bad}`);
+		return parts.join('  ');
+	}
+
+	function renderBar(label, len, state, hint) {
+		return `<div class="bar-row">
+			<span class="bar-label">${label}</span>
+			<span class="bar-track"><span class="bar-fill lv-${state}" style="width:${Math.min(100, len)}%"></span></span>
+			<span class="bar-num lv-${state}">${len} ${DOT[state]}</span>
+			<span class="bar-hint">${hint}</span>
+		</div>`;
+	}
+
+	function renderPreview(pv) {
+		$('serp').hidden = false;
+		$('bars').hidden = false;
+		$('serpTitle').textContent = pv.titleFull || '(no title)';
+		$('serpUrl').textContent = pv.url;
+		$('serpDesc').textContent = pv.description || '(no description)';
+		$('bars').innerHTML =
+			renderBar('SEO title', pv.titleLen, pv.titleState, 'aim 55–58') +
+			renderBar('Meta desc', pv.descLen, pv.descState, 'aim 155–158') +
+			`<div class="bar-row"><span class="bar-label">"Apex Engine"</span><span class="bar-note lv-${pv.apexState}">${DOT[pv.apexState]} appears ${pv.apexCount}× (want 1)</span></div>`;
+	}
+
+	function renderPanels(a) {
+		const linkChecks = a.links.checks.slice();
+		let linksExtra = '';
+		if (a.links.targets.length) linksExtra += '<div class="sub">Linked: ' + a.links.targets.map((t) => `<code>${esc(t)}</code>`).join(' ') + '</div>';
+		if (a.links.suggestions.length) {
+			linksExtra += '<div class="sub">Consider linking:<ul class="sugg">' +
+				a.links.suggestions.map((s) => `<li><code>/blog/${esc(s.slug)}/</code> — ${esc(s.title)} <span class="tag">${esc(s.vertical)}</span></li>`).join('') +
+				'</ul></div>';
+		}
+		const schemaPills = a.schema.nodes.map((n) => `<span class="pill lv-${n.level}">${DOT[n.level]} ${esc(n.label)}</span>`).join('');
+
+		$('panels').hidden = false;
+		$('panels').innerHTML = [
+			panel('Content', tally(a.content), checkList(a.content)),
+			panel('Images & alt', tally(a.images), checkList(a.images)),
+			panel('Schema', '', `<div class="pills">${schemaPills}</div>${checkList(a.schema.notes)}`),
+			panel('Internal linking', tally(linkChecks), checkList(linkChecks) + linksExtra),
+		].join('');
+	}
+	function panel(title, badge, inner) {
+		return `<details class="panel" open>
+			<summary><span class="panel-title">${title}</span><span class="panel-badge">${badge}</span></summary>
+			<div class="panel-body">${inner}</div>
+		</details>`;
+	}
+
 	async function scan() {
 		const mdx = $('mdx').value;
-		$('scanMsg').textContent = 'Scanning…';
+		$('scanMsg').textContent = 'Analyzing…';
 		$('publishBtn').disabled = true;
 		$('done').hidden = true;
 		let r;
 		try {
 			r = await api({ action: 'scan', mdx });
 		} catch (e) {
-			$('scanMsg').textContent = 'Scan failed: ' + e.message;
+			$('scanMsg').textContent = 'Analyze failed: ' + e.message;
 			return;
 		}
 		$('scanMsg').textContent = '';
 		$('report').hidden = false;
 
-		// errors
 		if (r.errors && r.errors.length) {
 			$('errors').innerHTML =
 				'<div class="err-box"><strong>Fix these before publishing:</strong><ul>' +
-				r.errors.map((e) => `<li>${esc(e)}</li>`).join('') +
-				'</ul></div>';
+				r.errors.map((e) => `<li>${esc(e)}</li>`).join('') + '</ul></div>';
 		} else {
-			$('errors').innerHTML = '<div class="ok-box">✓ Frontmatter looks good.</div>';
+			$('errors').innerHTML = '<div class="ok-box">✓ Frontmatter valid — ready to publish (address any 🟠 below to sharpen it).</div>';
 		}
 
-		// meta
-		const m = r.meta || {};
-		$('meta').innerHTML = ['vertical', 'title', 'description', 'pubDate']
-			.map((k) => `<div><span class="k">${k}</span><span class="v">${esc(m[k] || '—')}</span></div>`)
-			.join('');
+		if (r.preview) renderPreview(r.preview);
+		if (r.analysis) renderPanels(r.analysis);
 
 		// slug
 		$('slugGroup').hidden = false;
@@ -121,20 +187,23 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		$('slugWarn').hidden = !r.slugTaken;
 		if (r.slugTaken) $('slugWarn').textContent = `⚠ A post "${r.slug}" already exists — change the slug or it will be rejected.`;
 
-		// slots
+		// slots (with alt fields)
 		const slots = r.slots || [];
 		$('slotsWrap').hidden = slots.length === 0;
 		$('slots').innerHTML = slots
 			.map(
 				(s) => `
 			<div class="slot" data-id="${esc(s.id)}" data-kind="${esc(s.kind)}">
-				<div class="slot-info">
+				<div class="slot-head">
 					<span class="slot-id">${s.kind === 'hero' ? 'HERO' : esc(s.id)}</span>
-					<span class="slot-cap">${esc(s.caption || '(no caption)')}</span>
+					<span class="slot-cap">${esc(s.caption || '')}</span>
 					${s.isPlaceholder ? '<span class="slot-ph">placeholder</span>' : ''}
 				</div>
-				<input type="file" accept="image/*" class="slot-file" />
-				<img class="slot-thumb" hidden alt="" />
+				<input type="text" class="slot-alt ${s.alt ? '' : 'needs-alt'}" placeholder="Alt text (describe the image)…" value="${esc(s.alt || '')}" />
+				<div class="slot-file-row">
+					<input type="file" accept="image/*" class="slot-file" />
+					<img class="slot-thumb" hidden alt="" />
+				</div>
 			</div>`,
 			)
 			.join('');
@@ -143,18 +212,18 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 			inp.addEventListener('change', (e) => {
 				const file = e.target.files[0];
 				const thumb = e.target.parentElement.querySelector('.slot-thumb');
-				if (file) {
-					thumb.src = URL.createObjectURL(file);
-					thumb.hidden = false;
-				} else {
-					thumb.hidden = true;
-				}
+				if (file) { thumb.src = URL.createObjectURL(file); thumb.hidden = false; }
+				else thumb.hidden = true;
 			});
+		});
+		document.querySelectorAll('.slot-alt').forEach((inp) => {
+			inp.addEventListener('input', (e) => e.target.classList.toggle('needs-alt', !e.target.value.trim()));
 		});
 
 		scanned = { slots };
-		$('slug').addEventListener('input', () => ($('slugEcho').textContent = $('slug').value || '…'));
-		$('publishBtn').disabled = r.errors && r.errors.length > 0;
+		$('slug').oninput = () => ($('slugEcho').textContent = $('slug').value || '…');
+		// Publish blocked only on hard errors / slug clash — 🟠 warnings are advisory.
+		$('publishBtn').disabled = (r.errors && r.errors.length > 0) || !!r.slugTaken;
 	}
 
 	async function publish() {
@@ -163,14 +232,18 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		btn.disabled = true;
 		const msg = $('publishMsg');
 		const uploads = { body: {} };
+		const alts = { body: {} };
 
 		try {
 			const slotEls = [...document.querySelectorAll('.slot')];
 			for (const el of slotEls) {
-				const file = el.querySelector('.slot-file').files[0];
-				if (!file) continue;
 				const id = el.dataset.id;
 				const kind = el.dataset.kind;
+				const altVal = el.querySelector('.slot-alt').value.trim();
+				if (altVal) { if (kind === 'hero') alts.hero = altVal; else alts.body[id] = altVal; }
+
+				const file = el.querySelector('.slot-file').files[0];
+				if (!file) continue;
 				msg.textContent = `Uploading ${kind === 'hero' ? 'hero' : id}…`;
 				const dataBase64 = await fileToWebpBase64(file);
 				const up = await api({ action: 'upload-blob', filename: id + '.webp', dataBase64 });
@@ -180,7 +253,7 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 			}
 
 			msg.textContent = 'Publishing…';
-			const r = await api({ action: 'publish', mdx: $('mdx').value, slug: $('slug').value, uploads });
+			const r = await api({ action: 'publish', mdx: $('mdx').value, slug: $('slug').value, uploads, alts });
 			if (!r.ok) throw new Error((r.errors && r.errors.join('; ')) || r.error || 'publish failed');
 
 			msg.textContent = '';
@@ -199,10 +272,10 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 </script>
 
 <style>
-	.lede { color: var(--metal-gray); max-width: 60ch; }
+	.lede { color: var(--metal-gray); max-width: 62ch; }
 	.field-label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.25em 0 0.4em; }
 	textarea {
-		width: 100%; min-height: 320px; padding: 1em; font-family: ui-monospace, Menlo, Consolas, monospace;
+		width: 100%; min-height: 300px; padding: 1em; font-family: ui-monospace, Menlo, Consolas, monospace;
 		font-size: 0.85rem; line-height: 1.5; border: 1px solid var(--metal-gray-light); background: var(--paper); resize: vertical;
 	}
 	textarea:focus-visible { outline: 2px solid var(--accent-color); }
@@ -210,18 +283,64 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	.publish-row { margin-top: 2em; border-top: 1px solid var(--line); padding-top: 1.5em; }
 	.muted { color: var(--metal-gray); font-size: 0.9rem; }
 	.warn { color: var(--red-mica-dark, #B91C1C); font-weight: 700; font-size: 0.85rem; margin-top: 0.4em; }
-	input[type='text'] { width: 100%; max-width: 520px; padding: 0.6em; border: 1px solid var(--metal-gray-light); background: var(--paper); font-family: inherit; }
+	input[type='text'] { width: 100%; max-width: 620px; padding: 0.6em; border: 1px solid var(--metal-gray-light); background: var(--paper); font-family: inherit; }
 	.err-box { background: #FEF2F2; border-left: 4px solid var(--red-mica-dark, #B91C1C); padding: 0.75em 1em; margin: 1em 0; }
 	.err-box ul { margin: 0.5em 0 0; padding-left: 1.2em; }
 	.ok-box { color: #166534; font-weight: 700; margin: 1em 0; }
-	.meta-box { display: grid; gap: 0.3em; background: var(--paper-off); padding: 1em; margin: 0.5em 0; font-size: 0.9rem; }
-	.meta-box .k { display: inline-block; width: 110px; font-weight: 700; text-transform: uppercase; font-size: 0.72rem; color: var(--metal-gray); }
+
+	/* level colors */
+	.lv-good { color: #166534; }
+	.lv-warn { color: #B45309; }
+	.lv-bad { color: #B91C1C; }
+
+	/* Google snippet preview */
+	.serp { border: 1px solid var(--line); border-radius: 8px; padding: 1em 1.25em; margin: 1.25em 0 0.75em; background: var(--paper); max-width: 640px; }
+	.serp-title { color: #1a0dab; font-size: 1.25rem; line-height: 1.3; }
+	.serp-url { color: #006621; font-size: 0.85rem; margin: 0.15em 0 0.4em; }
+	.serp-desc { color: #4d5156; font-size: 0.9rem; line-height: 1.5; }
+	@media (prefers-color-scheme: dark) {
+		.serp-title { color: #8ab4f8; } .serp-url { color: #6ee7a0; } .serp-desc { color: var(--metal-gray-light); }
+	}
+
+	/* meta bars */
+	.bars { display: grid; gap: 0.5em; max-width: 640px; margin-bottom: 1.5em; }
+	.bar-row { display: flex; align-items: center; gap: 0.75em; font-size: 0.85rem; flex-wrap: wrap; }
+	.bar-label { width: 90px; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; color: var(--metal-gray); }
+	.bar-track { flex: 1; min-width: 120px; height: 8px; background: var(--paper-off); border-radius: 4px; overflow: hidden; }
+	.bar-fill { display: block; height: 100%; }
+	.bar-fill.lv-good { background: #16a34a; } .bar-fill.lv-warn { background: #d97706; } .bar-fill.lv-bad { background: #dc2626; }
+	.bar-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+	.bar-hint { color: var(--metal-gray); font-size: 0.75rem; }
+	.bar-note { font-weight: 700; }
+
+	/* analysis panels */
+	.panels { display: grid; gap: 0.6em; margin: 1em 0 0.5em; }
+	.panel { border: 1px solid var(--line); border-radius: 6px; background: var(--paper); }
+	.panel summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.7em 1em; font-weight: 700; }
+	.panel-title { text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.04em; }
+	.panel-badge { font-size: 0.8rem; font-weight: 700; }
+	.panel-body { padding: 0 1em 0.9em; }
+	.checks { list-style: none; margin: 0.3em 0 0; padding: 0; }
+	.checks li { display: flex; gap: 0.5em; align-items: baseline; padding: 0.2em 0; font-size: 0.9rem; }
+	.checks .dot { flex: none; }
+	.pills { display: flex; flex-wrap: wrap; gap: 0.4em; margin: 0.4em 0; }
+	.pill { border: 1px solid var(--line); border-radius: 999px; padding: 0.2em 0.7em; font-size: 0.8rem; font-weight: 700; }
+	.sub { font-size: 0.85rem; color: var(--metal-gray); margin-top: 0.6em; }
+	.sub code { background: var(--paper-off); padding: 0.05em 0.35em; border-radius: 3px; font-size: 0.8rem; }
+	.sugg { list-style: none; margin: 0.3em 0 0; padding: 0; }
+	.sugg li { padding: 0.2em 0; font-size: 0.85rem; }
+	.tag { color: var(--red-mica); font-size: 0.7rem; text-transform: uppercase; font-weight: 700; margin-left: 0.3em; }
+
 	.section-h { font-size: 1.2rem; text-transform: uppercase; margin: 1.5em 0 0.3em; }
-	.slot { display: flex; align-items: center; gap: 1em; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 0.8em 0; }
-	.slot-info { display: flex; flex-direction: column; min-width: 220px; flex: 1; }
+	.slot { border-bottom: 1px solid var(--line); padding: 0.9em 0; display: grid; gap: 0.5em; }
+	.slot-head { display: flex; align-items: center; gap: 0.75em; flex-wrap: wrap; }
 	.slot-id { font-weight: 700; font-family: ui-monospace, monospace; font-size: 0.85rem; }
 	.slot-cap { color: var(--metal-gray); font-size: 0.85rem; }
 	.slot-ph { color: var(--red-mica); font-size: 0.7rem; text-transform: uppercase; font-weight: 700; }
+	.slot-alt { max-width: 100%; }
+	.slot-alt.needs-alt { border-color: #d97706; background: #fffbeb; }
+	@media (prefers-color-scheme: dark) { .slot-alt.needs-alt { background: rgba(217,119,6,0.12); } }
+	.slot-file-row { display: flex; align-items: center; gap: 1em; }
 	.slot-thumb { height: 48px; width: auto; border: 1px solid var(--line); }
 	.done-box { background: var(--paper-off); border-left: 4px solid #166534; padding: 1em 1.25em; margin-top: 1.5em; }
 </style>
