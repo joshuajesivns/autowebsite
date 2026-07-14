@@ -346,6 +346,17 @@ function headingsOf(body: string): string {
 	return [...body.matchAll(/^#{2,3}\s+(.*)$/gm)].map((m) => m[1]).join('\n');
 }
 
+/** Rough prose word count: drop import lines, JSX tags, and markdown syntax. */
+export function wordCount(body: string): number {
+	const text = body
+		.replace(/^import\s.+$/gm, '')
+		.replace(/<[^>]+>/g, ' ')
+		.replace(/[#>*_`|[\]()-]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim();
+	return text ? text.split(' ').length : 0;
+}
+
 /** Everything the traffic-light panel renders. Advisory only. */
 export function analyzePost(parsed: ParsedPost, posts: PostIndexEntry[], currentSlug: string): Analysis {
 	const ex = parseExtras(parsed.frontmatter);
@@ -378,6 +389,11 @@ export function analyzePost(parsed: ParsedPost, posts: PostIndexEntry[], current
 	content.push({
 		level: ex.faqCount >= 3 ? 'good' : ex.faqCount >= 1 ? 'warn' : 'warn',
 		text: ex.faqCount ? `FAQ: ${ex.faqCount} Q&A${ex.faqCount > 1 ? 's' : ''} → FAQPage schema.` : 'No FAQ entries — add a few for the FAQ section + schema.',
+	});
+	const words = wordCount(parsed.body);
+	content.push({
+		level: words >= 800 ? 'good' : words >= 400 ? 'warn' : 'bad',
+		text: `~${words} words${words < 800 ? ' (aim 800+ for a guide)' : '.'}`,
 	});
 
 	// ── Images + alt ───────────────────────────────────────────────────────────

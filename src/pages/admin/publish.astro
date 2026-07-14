@@ -35,6 +35,12 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		</div>
 		<div id="bars" class="bars" hidden></div>
 
+		<!-- Rendered article preview -->
+		<details id="previewPanel" class="panel prev-panel" hidden>
+			<summary><span class="panel-title">Article preview</span><span class="panel-badge muted">approx. rendering</span></summary>
+			<div class="panel-body"><div id="previewBody" class="prose-preview"></div></div>
+		</details>
+
 		<!-- Traffic-light analysis -->
 		<div id="panels" class="panels" hidden></div>
 
@@ -154,6 +160,108 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		</details>`;
 	}
 
+	// ── Approximate MDX → HTML preview (client-side, no dependency) ─────────────
+	function inlineMd(s) {
+		// escape first, then apply inline markdown
+		s = esc(s);
+		s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+		s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+		s = s.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+		s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+		return s;
+	}
+
+	function mdToHtml(body) {
+		// Preprocess MDX: drop imports/comments, map components to plain blocks.
+		body = body
+			.replace(/^import\s.+$/gm, '')
+			.replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+			.replace(/<Pullquote>([\s\S]*?)<\/Pullquote>/g, (_, t) => `\n\n§PQ§${t.trim()}§PQ§\n\n`)
+			.replace(/<Figure\b[^>]*?caption=["']([^"']*)["'][^>]*?\/>/g, (_, c) => `\n\n§FIG§${c}§FIG§\n\n`)
+			.replace(/<Figure\b[^>]*?\/>/g, '\n\n§FIG§§FIG§\n\n')
+			.replace(/<\/?Split\b[^>]*>/g, '')
+			.replace(/<\/?Gallery\b[^>]*>/g, '')
+			.replace(/<[^>\n]+\/>/g, ''); // any other self-closing JSX
+
+		const lines = body.split('\n');
+		const out = [];
+		let i = 0;
+		const flushPara = (buf) => { if (buf.length) out.push('<p>' + inlineMd(buf.join(' ')) + '</p>'); };
+		let para = [];
+
+		while (i < lines.length) {
+			let line = lines[i];
+			const raw = line.trimEnd();
+
+			if (!raw.trim()) { flushPara(para); para = []; i++; continue; }
+
+			// special markers
+			let mk = raw.match(/^§PQ§([\s\S]*)§PQ§$/);
+			if (mk) { flushPara(para); para = []; out.push(`<blockquote class="prev-pq">${inlineMd(mk[1])}</blockquote>`); i++; continue; }
+			mk = raw.match(/^§FIG§(.*)§FIG§$/);
+			if (mk) { flushPara(para); para = []; out.push(`<figure class="prev-fig"><div class="prev-fig-ph">🖼 image</div>${mk[1] ? `<figcaption>${esc(mk[1])}</figcaption>` : ''}</figure>`); i++; continue; }
+
+			// heading
+			mk = raw.match(/^(#{1,6})\s+(.*)$/);
+			if (mk) { flushPara(para); para = []; const lvl = Math.min(mk[1].length, 6); out.push(`<h${lvl}>${inlineMd(mk[2])}</h${lvl}>`); i++; continue; }
+
+			// hr
+			if (/^(-{3,}|\*{3,})$/.test(raw.trim())) { flushPara(para); para = []; out.push('<hr />'); i++; continue; }
+
+			// table
+			if (/^\s*\|/.test(raw) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+				flushPara(para); para = [];
+				const cells = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+				const head = cells(raw);
+				i += 2; // skip header + separator
+				const rows = [];
+				while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+				let t = '<table><thead><tr>' + head.map((c) => `<th>${inlineMd(c)}</th>`).join('') + '</tr></thead><tbody>';
+				t += rows.map((r) => '<tr>' + r.map((c) => `<td>${inlineMd(c)}</td>`).join('') + '</tr>').join('');
+				t += '</tbody></table>';
+				out.push(t);
+				continue;
+			}
+
+			// unordered list
+			if (/^\s*[-*]\s+/.test(raw)) {
+				flushPara(para); para = [];
+				const items = [];
+				while (i < lines.length && /^\s*[-*]\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*[-*]\s+/, '')); i++; }
+				out.push('<ul>' + items.map((it) => `<li>${inlineMd(it)}</li>`).join('') + '</ul>');
+				continue;
+			}
+			// ordered list
+			if (/^\s*\d+\.\s+/.test(raw)) {
+				flushPara(para); para = [];
+				const items = [];
+				while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { items.push(lines[i].replace(/^\s*\d+\.\s+/, '')); i++; }
+				out.push('<ol>' + items.map((it) => `<li>${inlineMd(it)}</li>`).join('') + '</ol>');
+				continue;
+			}
+			// blockquote
+			if (/^\s*>\s?/.test(raw)) {
+				flushPara(para); para = [];
+				const q = [];
+				while (i < lines.length && /^\s*>\s?/.test(lines[i])) { q.push(lines[i].replace(/^\s*>\s?/, '')); i++; }
+				out.push(`<blockquote>${inlineMd(q.join(' '))}</blockquote>`);
+				continue;
+			}
+
+			para.push(raw.trim());
+			i++;
+		}
+		flushPara(para);
+		return out.join('\n');
+	}
+
+	function renderArticlePreview(mdx) {
+		const m = mdx.replace(/^﻿/, '').replace(/\r\n/g, '\n').match(/^---\n[\s\S]*?\n---\n?([\s\S]*)$/);
+		const body = m ? m[1] : mdx;
+		$('previewPanel').hidden = false;
+		$('previewBody').innerHTML = mdToHtml(body) || '<p class="muted">Nothing to preview yet.</p>';
+	}
+
 	async function scan() {
 		const mdx = $('mdx').value;
 		$('scanMsg').textContent = 'Analyzing…';
@@ -179,6 +287,7 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 
 		if (r.preview) renderPreview(r.preview);
 		if (r.analysis) renderPanels(r.analysis);
+		renderArticlePreview($('mdx').value);
 
 		// slug
 		$('slugGroup').hidden = false;
@@ -330,6 +439,27 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	.sugg { list-style: none; margin: 0.3em 0 0; padding: 0; }
 	.sugg li { padding: 0.2em 0; font-size: 0.85rem; }
 	.tag { color: var(--red-mica); font-size: 0.7rem; text-transform: uppercase; font-weight: 700; margin-left: 0.3em; }
+
+	/* rendered article preview */
+	.prev-panel .panel-badge.muted { text-transform: none; letter-spacing: 0; font-weight: 400; }
+	.prose-preview { max-width: 68ch; line-height: 1.65; font-size: 1rem; }
+	.prose-preview h1, .prose-preview h2, .prose-preview h3 { line-height: 1.2; margin: 1.2em 0 0.4em; }
+	.prose-preview h2 { font-size: 1.5rem; border-top: 1px solid var(--line); padding-top: 0.6em; }
+	.prose-preview h3 { font-size: 1.2rem; }
+	.prose-preview p { margin: 0 0 1em; }
+	.prose-preview ul, .prose-preview ol { margin: 0 0 1em; padding-left: 1.3em; }
+	.prose-preview li { margin-bottom: 0.35em; }
+	.prose-preview a { color: var(--red-mica); text-decoration: underline; }
+	.prose-preview code { background: var(--paper-off); padding: 0.05em 0.35em; border-radius: 3px; font-size: 0.9em; }
+	.prose-preview hr { border: none; border-top: 1px solid var(--line); margin: 2em 0; }
+	.prose-preview table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: 0.9rem; }
+	.prose-preview th { background: var(--text-color); color: var(--bg-color); padding: 0.5em 0.6em; text-align: left; }
+	.prose-preview td { border: 1px solid var(--line); padding: 0.5em 0.6em; }
+	.prose-preview blockquote { margin: 1.5em 0; padding-left: 1em; border-left: 4px solid var(--line); color: var(--metal-gray); font-style: italic; }
+	.prose-preview .prev-pq { font-size: 1.4rem; font-style: italic; border-left: 4px solid var(--red-mica); color: var(--black-mica-2); }
+	.prev-fig { margin: 1.5em 0; }
+	.prev-fig-ph { background: var(--paper-off); border: 1px dashed var(--metal-gray-light); color: var(--metal-gray); padding: 2em; text-align: center; font-size: 0.9rem; }
+	.prev-fig figcaption { margin-top: 0.5em; padding-left: 0.75em; border-left: 3px solid var(--red-mica); font-size: 0.85rem; color: var(--metal-gray); }
 
 	.section-h { font-size: 1.2rem; text-transform: uppercase; margin: 1.5em 0 0.3em; }
 	.slot { border-bottom: 1px solid var(--line); padding: 0.9em 0; display: grid; gap: 0.5em; }

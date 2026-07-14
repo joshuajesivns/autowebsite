@@ -1,0 +1,51 @@
+---
+export const prerender = false;
+
+import PageLayout from '../../layouts/Page.astro';
+import { ADMIN_COOKIE_NAME, isValidAdminSession } from '../../lib/adminAuth';
+
+if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
+	return Astro.redirect('/admin/login');
+}
+
+const tools = [
+	{
+		href: '/admin/publish/',
+		title: 'Publish a Post',
+		desc: 'Paste an MDX article, review its Google preview / SEO / schema / internal links, add images + alt text, and publish to the live site.',
+	},
+	{
+		href: '/admin/moderation/',
+		title: 'Moderation',
+		desc: 'Review and moderate owner-submitted PMS cost contributions before they go live.',
+	},
+];
+---
+
+<PageLayout title="Admin" description="Apex Engine admin tools.">
+	<p class="lede">Admin tools for Apex Engine. These pages are not linked publicly and sit behind your admin login.</p>
+	<div class="tool-grid">
+		{tools.map((t) => (
+			<a class="tool-card" href={t.href}>
+				<h2>{t.title}</h2>
+				<p>{t.desc}</p>
+				<span class="cta">Open →</span>
+			</a>
+		))}
+	</div>
+</PageLayout>
+
+<style>
+	.lede { color: var(--metal-gray); max-width: 60ch; }
+	.tool-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1em; margin-top: 1.5em; }
+	.tool-card {
+		display: flex; flex-direction: column; gap: 0.4em;
+		background: var(--paper-off); border-left: 4px solid var(--red-mica);
+		padding: 1.4em; text-decoration: none; color: var(--black-mica-2);
+		transition: transform 0.15s ease;
+	}
+	.tool-card:hover { transform: translateY(-2px); }
+	.tool-card h2 { font-size: 1.15rem; margin: 0; }
+	.tool-card p { font-size: 0.9rem; color: var(--metal-gray); margin: 0; }
+	.cta { margin-top: auto; padding-top: 0.5em; font-weight: 700; color: var(--red-mica); }
+</style>

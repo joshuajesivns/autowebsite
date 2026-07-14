@@ -11,12 +11,13 @@ interface Props {
 	title: string;
 	description: string;
 	image?: ImageMetadata;
+	ogType?: 'website' | 'article';
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const site = Astro.site?.href ?? canonicalURL.origin + '/';
 
-const { title, description, image = FallbackImage } = Astro.props;
+const { title, description, image = FallbackImage, ogType = 'website' } = Astro.props;
 
 // Site-wide Organization entity — gives search engines + AI Overviews a single
 // authoritative identity (name, logo, NAP, official profiles) to attach trust to.
@@ -91,7 +92,7 @@ const siteSchema = {
 <meta name="description" content={description} />
 
 <!-- Open Graph / Facebook -->
-<meta property="og:type" content="website" />
+<meta property="og:type" content={ogType} />
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />

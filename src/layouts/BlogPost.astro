@@ -43,7 +43,7 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
 
 <html lang="en-PH">
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead title={title} description={description} image={heroImage} ogType="article" />
 		<!-- One linked @graph: Article + Vehicle + FAQPage (+ Products when present) -->
 		<script type="application/ld+json" is:inline set:html={JSON.stringify(graph)} />
 	</head>
