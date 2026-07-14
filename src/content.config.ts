@@ -18,6 +18,9 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
+			// Alt text for the hero image (accessibility + image SEO). Optional so
+			// existing posts don't break; the publish tool nudges you to fill it.
+			heroAlt: z.string().optional(),
 			tags: z.array(z.string()).optional(), // Tags to link articles to car models/makes
 			// Q&A pairs → rendered as a visible FAQ section + FAQPage schema (AI Overview fuel)
 			faq: z.array(z.object({ q: z.string(), a: z.string() })).optional(),

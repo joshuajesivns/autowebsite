@@ -11,7 +11,7 @@ import '../styles/apex.css';
 
 type Props = CollectionEntry<'blog'>['data'];
 
-const { title, description, pubDate, updatedDate, heroImage, faq, tags, vertical, vehicle, pms, featuredProducts } =
+const { title, description, pubDate, updatedDate, heroImage, heroAlt, faq, tags, vertical, vehicle, pms, featuredProducts } =
 	Astro.props;
 
 // ── Structured data ────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
                 <header class="blog-hero">
                     {heroImage && (
                         <div class="hero-bg-container">
-                            <Image width={1920} height={1080} src={heroImage} alt="" class="hero-bg-img" />
+                            <Image width={1920} height={1080} src={heroImage} alt={heroAlt ?? ""} class="hero-bg-img" />
                             <div class="hero-overlay"></div>
                         </div>
                     )}

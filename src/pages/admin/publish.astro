@@ -1,0 +1,227 @@
+---
+export const prerender = false;
+
+import PageLayout from '../../layouts/Page.astro';
+import { ADMIN_COOKIE_NAME, isValidAdminSession } from '../../lib/adminAuth';
+
+if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
+	return Astro.redirect('/admin/login');
+}
+---
+
+<PageLayout title="Publish a Post" description="Paste an AI-written MDX article and publish it to Apex Engine.">
+	<p class="lede">
+		Paste the finished MDX from your prompt-builder workflow, click <strong>Scan</strong> to check it and
+		list its images, attach photos where you want them, then <strong>Publish</strong>. A bad paste can't
+		break the live site — a failed build just keeps the last good version.
+	</p>
+
+	<label class="field-label" for="mdx">Article MDX</label>
+	<textarea id="mdx" placeholder="Paste the full MDX (--- frontmatter --- then the body)…" spellcheck="false"></textarea>
+
+	<div class="row">
+		<button id="scanBtn" type="button" class="primary">Scan</button>
+		<span id="scanMsg" class="muted"></span>
+	</div>
+
+	<section id="report" hidden>
+		<div id="errors"></div>
+		<div id="meta" class="meta-box"></div>
+
+		<div class="field-group" id="slugGroup" hidden>
+			<label class="field-label" for="slug">Slug (the URL: /blog/<span id="slugEcho">…</span>/)</label>
+			<input type="text" id="slug" />
+			<p id="slugWarn" class="warn" hidden></p>
+		</div>
+
+		<div id="slotsWrap" hidden>
+			<h2 class="section-h">Images</h2>
+			<p class="muted">Attach a photo to any slot to replace its placeholder. Leave blank to keep the placeholder. Photos are auto-resized and converted to WebP before upload.</p>
+			<div id="slots"></div>
+		</div>
+
+		<div class="row publish-row">
+			<button id="publishBtn" type="button" class="primary" disabled>Publish</button>
+			<span id="publishMsg" class="muted"></span>
+		</div>
+	</section>
+
+	<div id="done" class="done-box" hidden></div>
+</PageLayout>
+
+<script>
+	const $ = (id) => document.getElementById(id);
+	let scanned = null; // { slug, slots }
+
+	function esc(s) {
+		return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+	}
+
+	async function api(body) {
+		const res = await fetch('/api/admin/publish', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(body),
+		});
+		return res.json();
+	}
+
+	// Downscale to <= 2000px on the long edge and re-encode as WebP, then base64.
+	async function fileToWebpBase64(file, maxDim = 2000, quality = 0.85) {
+		const bitmap = await createImageBitmap(file);
+		const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+		const w = Math.round(bitmap.width * scale);
+		const h = Math.round(bitmap.height * scale);
+		const canvas = document.createElement('canvas');
+		canvas.width = w;
+		canvas.height = h;
+		canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+		const blob = await new Promise((r) => canvas.toBlob(r, 'image/webp', quality));
+		const buf = new Uint8Array(await blob.arrayBuffer());
+		let bin = '';
+		for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+		return btoa(bin);
+	}
+
+	async function scan() {
+		const mdx = $('mdx').value;
+		$('scanMsg').textContent = 'Scanning…';
+		$('publishBtn').disabled = true;
+		$('done').hidden = true;
+		let r;
+		try {
+			r = await api({ action: 'scan', mdx });
+		} catch (e) {
+			$('scanMsg').textContent = 'Scan failed: ' + e.message;
+			return;
+		}
+		$('scanMsg').textContent = '';
+		$('report').hidden = false;
+
+		// errors
+		if (r.errors && r.errors.length) {
+			$('errors').innerHTML =
+				'<div class="err-box"><strong>Fix these before publishing:</strong><ul>' +
+				r.errors.map((e) => `<li>${esc(e)}</li>`).join('') +
+				'</ul></div>';
+		} else {
+			$('errors').innerHTML = '<div class="ok-box">✓ Frontmatter looks good.</div>';
+		}
+
+		// meta
+		const m = r.meta || {};
+		$('meta').innerHTML = ['vertical', 'title', 'description', 'pubDate']
+			.map((k) => `<div><span class="k">${k}</span><span class="v">${esc(m[k] || '—')}</span></div>`)
+			.join('');
+
+		// slug
+		$('slugGroup').hidden = false;
+		$('slug').value = r.slug || '';
+		$('slugEcho').textContent = r.slug || '…';
+		$('slugWarn').hidden = !r.slugTaken;
+		if (r.slugTaken) $('slugWarn').textContent = `⚠ A post "${r.slug}" already exists — change the slug or it will be rejected.`;
+
+		// slots
+		const slots = r.slots || [];
+		$('slotsWrap').hidden = slots.length === 0;
+		$('slots').innerHTML = slots
+			.map(
+				(s) => `
+			<div class="slot" data-id="${esc(s.id)}" data-kind="${esc(s.kind)}">
+				<div class="slot-info">
+					<span class="slot-id">${s.kind === 'hero' ? 'HERO' : esc(s.id)}</span>
+					<span class="slot-cap">${esc(s.caption || '(no caption)')}</span>
+					${s.isPlaceholder ? '<span class="slot-ph">placeholder</span>' : ''}
+				</div>
+				<input type="file" accept="image/*" class="slot-file" />
+				<img class="slot-thumb" hidden alt="" />
+			</div>`,
+			)
+			.join('');
+
+		document.querySelectorAll('.slot-file').forEach((inp) => {
+			inp.addEventListener('change', (e) => {
+				const file = e.target.files[0];
+				const thumb = e.target.parentElement.querySelector('.slot-thumb');
+				if (file) {
+					thumb.src = URL.createObjectURL(file);
+					thumb.hidden = false;
+				} else {
+					thumb.hidden = true;
+				}
+			});
+		});
+
+		scanned = { slots };
+		$('slug').addEventListener('input', () => ($('slugEcho').textContent = $('slug').value || '…'));
+		$('publishBtn').disabled = r.errors && r.errors.length > 0;
+	}
+
+	async function publish() {
+		if (!scanned) return;
+		const btn = $('publishBtn');
+		btn.disabled = true;
+		const msg = $('publishMsg');
+		const uploads = { body: {} };
+
+		try {
+			const slotEls = [...document.querySelectorAll('.slot')];
+			for (const el of slotEls) {
+				const file = el.querySelector('.slot-file').files[0];
+				if (!file) continue;
+				const id = el.dataset.id;
+				const kind = el.dataset.kind;
+				msg.textContent = `Uploading ${kind === 'hero' ? 'hero' : id}…`;
+				const dataBase64 = await fileToWebpBase64(file);
+				const up = await api({ action: 'upload-blob', filename: id + '.webp', dataBase64 });
+				if (!up.ok) throw new Error(up.error || 'upload failed');
+				if (kind === 'hero') uploads.hero = { sha: up.sha, ext: up.ext };
+				else uploads.body[id] = { sha: up.sha, ext: up.ext };
+			}
+
+			msg.textContent = 'Publishing…';
+			const r = await api({ action: 'publish', mdx: $('mdx').value, slug: $('slug').value, uploads });
+			if (!r.ok) throw new Error((r.errors && r.errors.join('; ')) || r.error || 'publish failed');
+
+			msg.textContent = '';
+			$('done').hidden = false;
+			$('done').innerHTML =
+				`<strong>✓ Published.</strong> Vercel is now building — your post will be live at ` +
+				`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a> in a minute or two.`;
+		} catch (e) {
+			msg.textContent = 'Error: ' + e.message;
+			btn.disabled = false;
+		}
+	}
+
+	$('scanBtn').addEventListener('click', scan);
+	$('publishBtn').addEventListener('click', publish);
+</script>
+
+<style>
+	.lede { color: var(--metal-gray); max-width: 60ch; }
+	.field-label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.25em 0 0.4em; }
+	textarea {
+		width: 100%; min-height: 320px; padding: 1em; font-family: ui-monospace, Menlo, Consolas, monospace;
+		font-size: 0.85rem; line-height: 1.5; border: 1px solid var(--metal-gray-light); background: var(--paper); resize: vertical;
+	}
+	textarea:focus-visible { outline: 2px solid var(--accent-color); }
+	.row { display: flex; align-items: center; gap: 1em; margin-top: 1em; }
+	.publish-row { margin-top: 2em; border-top: 1px solid var(--line); padding-top: 1.5em; }
+	.muted { color: var(--metal-gray); font-size: 0.9rem; }
+	.warn { color: var(--red-mica-dark, #B91C1C); font-weight: 700; font-size: 0.85rem; margin-top: 0.4em; }
+	input[type='text'] { width: 100%; max-width: 520px; padding: 0.6em; border: 1px solid var(--metal-gray-light); background: var(--paper); font-family: inherit; }
+	.err-box { background: #FEF2F2; border-left: 4px solid var(--red-mica-dark, #B91C1C); padding: 0.75em 1em; margin: 1em 0; }
+	.err-box ul { margin: 0.5em 0 0; padding-left: 1.2em; }
+	.ok-box { color: #166534; font-weight: 700; margin: 1em 0; }
+	.meta-box { display: grid; gap: 0.3em; background: var(--paper-off); padding: 1em; margin: 0.5em 0; font-size: 0.9rem; }
+	.meta-box .k { display: inline-block; width: 110px; font-weight: 700; text-transform: uppercase; font-size: 0.72rem; color: var(--metal-gray); }
+	.section-h { font-size: 1.2rem; text-transform: uppercase; margin: 1.5em 0 0.3em; }
+	.slot { display: flex; align-items: center; gap: 1em; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding: 0.8em 0; }
+	.slot-info { display: flex; flex-direction: column; min-width: 220px; flex: 1; }
+	.slot-id { font-weight: 700; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+	.slot-cap { color: var(--metal-gray); font-size: 0.85rem; }
+	.slot-ph { color: var(--red-mica); font-size: 0.7rem; text-transform: uppercase; font-weight: 700; }
+	.slot-thumb { height: 48px; width: auto; border: 1px solid var(--line); }
+	.done-box { background: var(--paper-off); border-left: 4px solid #166534; padding: 1em 1.25em; margin-top: 1.5em; }
+</style>

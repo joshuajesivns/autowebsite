@@ -80,7 +80,7 @@ const DRIVE_CONFIG: Record<string, string> = {
 // the car verticals add Vehicle + Products; only Daily Driver adds the PMS HowTo.
 // An entity still needs its data present to appear — this table only gates what's
 // *eligible*, so schema can never describe something the vertical shouldn't carry.
-const RECIPE: Record<Vertical, { vehicle: boolean; howto: boolean; products: boolean }> = {
+export const RECIPE: Record<Vertical, { vehicle: boolean; howto: boolean; products: boolean }> = {
 	'daily-driver': { vehicle: true, howto: true, products: true },
 	ev: { vehicle: true, howto: false, products: true },
 	jdm: { vehicle: true, howto: false, products: true },
