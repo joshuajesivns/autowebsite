@@ -13,13 +13,13 @@ import '../styles/apex.css';
 
 const latestBlogs = (await getCollection('blog'))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-	.slice(0, 2);
+	.slice(0, 3);
 ---
 
 <!doctype html>
 <html lang="en-PH">
 	<head>
-		<BaseHead title="Verified Used Car Marketplace Philippines - Apex Engine" description="Apex Engine is the Philippines' transparent car marketplace and buying guide — every listing verified, every spec documented. Browse trusted inventory now." />
+		<BaseHead title="Honest Car Buying Guides in the Philippines - Apex Engine" description="Apex Engine documents cars for Philippine buyers — real PMS cost, EV, and JDM guides, with a verified used-car marketplace coming soon. Read the guides now." />
 		<script type="application/ld+json" is:inline set:html={JSON.stringify({
 			"@context": "https://schema.org",
 			"@type": "WebSite",
@@ -45,32 +45,39 @@ const latestBlogs = (await getCollection('blog'))
 				<div class="hero-overlay">
                     <h1>The Apex of Automotive Engineering</h1>
                     <p class="hero-sub">Verified imports and honest technical documentation — every machine, fully spec'd.</p>
-                    {!LISTINGS_LIVE && <p class="search-soon" role="status">🚧 Verified inventory launching soon — search opens at launch.</p>}
-                    <form class="quick-search" action="/listings" method="get" aria-disabled={!LISTINGS_LIVE}>
-                        <div class="field">
-                            <label class="sr-only" for="search-make">Make</label>
-                            <select id="search-make" name="make" disabled={!LISTINGS_LIVE}>
-                                <option value="">Make</option>
-                                {makes.map((m) => <option value={m.toLowerCase()}>{m}</option>)}
-                            </select>
+                    {LISTINGS_LIVE ? (
+                        <form class="quick-search" action="/listings" method="get">
+                            <div class="field">
+                                <label class="sr-only" for="search-make">Make</label>
+                                <select id="search-make" name="make">
+                                    <option value="">Make</option>
+                                    {makes.map((m) => <option value={m.toLowerCase()}>{m}</option>)}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="sr-only" for="search-model">Model</label>
+                                <select id="search-model" name="model" disabled>
+                                    <option value="">Model</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="sr-only" for="search-budget">Budget</label>
+                                <select id="search-budget" name="budget">
+                                    <option value="">Budget</option>
+                                    <option value="500000">Under ₱500k</option>
+                                    <option value="1000000">Under ₱1M</option>
+                                    <option value="2000000">Under ₱2M</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="primary">Search</button>
+                        </form>
+                    ) : (
+                        <div class="hero-cta">
+                            <a href="/blog" class="cta-link"><button class="primary">Read the Guides</button></a>
+                            <a href="/models" class="hero-link">Browse the catalog →</a>
+                            <p class="search-soon" role="status">🚧 Verified inventory launching soon.</p>
                         </div>
-                        <div class="field">
-                            <label class="sr-only" for="search-model">Model</label>
-                            <select id="search-model" name="model" disabled>
-                                <option value="">Model</option>
-                            </select>
-                        </div>
-                        <div class="field">
-                            <label class="sr-only" for="search-budget">Budget</label>
-                            <select id="search-budget" name="budget" disabled={!LISTINGS_LIVE}>
-                                <option value="">Budget</option>
-                                <option value="500000">Under ₱500k</option>
-                                <option value="1000000">Under ₱1M</option>
-                                <option value="2000000">Under ₱2M</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="primary" disabled={!LISTINGS_LIVE}>Search</button>
-                    </form>
+                    )}
                 </div>
 			</section>
 
@@ -83,32 +90,24 @@ const latestBlogs = (await getCollection('blog'))
 					<li><span>✓</span> Inspection report</li>
 					<li><span>✓</span> EV/hybrid battery health</li>
 				</ul>
-				<p class="license">Licensed dealer #001</p>
 			</section>
 
+			{LISTINGS_LIVE && (
 			<section id="featured-listings">
 				<h2>Featured Listings</h2>
-				{LISTINGS_LIVE ? (
-					<div class="listing-grid">
-						{featuredListings.map(item => <VehicleSpecCard data={item} />)}
-					</div>
-				) : (
-					<div class="coming-soon-panel">
-						<span class="cs-badge">Coming Soon</span>
-						<p>We're documenting our first verified machines now. Every unit will launch with a full technical audit — verified odometer, Japan auction grade, and inspection report. No shortcuts.</p>
-						<a href="/blog" class="cta-link"><button class="primary">Read our guides while you wait</button></a>
-					</div>
-				)}
+				<div class="listing-grid">
+					{featuredListings.map(item => <VehicleSpecCard data={item} />)}
+				</div>
 			</section>
+			)}
 
+			{LISTINGS_LIVE && (
 			<section id="browse-category">
 				<h2>Browse by Category</h2>
 				<div class="grid">
                     {CATEGORIES.map((cat) => {
                         const count = availableInCategory(cat.slug);
-                        const blurb = !LISTINGS_LIVE
-                            ? `${cat.blurb} — coming soon`
-                            : count > 0 ? `${cat.blurb} (${count} available)` : `${cat.blurb} — sourcing soon`;
+                        const blurb = count > 0 ? `${cat.blurb} (${count} available)` : `${cat.blurb} — sourcing soon`;
                         return (
                             <a href="/listings" class="card-anchor">
                                 <PandaCard title={cat.label} description={blurb} />
@@ -117,6 +116,7 @@ const latestBlogs = (await getCollection('blog'))
                     })}
                 </div>
 			</section>
+			)}
 
 			<section id="news-blog">
 				<h2>Automotive News & Blog</h2>
@@ -137,22 +137,19 @@ const latestBlogs = (await getCollection('blog'))
 			<section id="how-to">
 				<h2>How-To Guides</h2>
 				<ul>
-                    <li><a href="#">Toyota Vios Preventive Maintenance Schedule</a></li>
-                    <li><a href="#">LTO Registration Renewal Guide 2026</a></li>
+                    <li><a href="/blog/toyota-vios-pms-guide/">Toyota Vios Preventive Maintenance Schedule</a></li>
+                    <li><a href="/blog/lto-vehicle-registration-2026/">LTO Registration Renewal Guide 2026</a></li>
                 </ul>
 			</section>
 
 			<section id="culture-hub">
 				<h2>JDM Culture Hub</h2>
-				<p>Stories on drift heritage and Touge culture in the Philippines.</p>
-			</section>
-
-			<section id="buyer-reviews">
-				<h2>Buyer Reviews</h2>
-				<blockquote>
-					"Smooth process from import to delivery. Verified!"
-					<footer>— John D.</footer>
-				</blockquote>
+				<p>Buying, building, and keeping the icons alive in the Philippines.</p>
+				<ul>
+                    <li><a href="/blog/toyota-corolla-ae92-guide/">Toyota Corolla AE92 buyer's guide</a></li>
+                    <li><a href="/blog/honda-civic-sir-guide/">Honda Civic SiR (EK4) buyer's guide</a></li>
+                    <li><a href="/blog/toyota-celica-t200-guide/">Toyota Celica GT-Four (T200) buyer's guide</a></li>
+                </ul>
 			</section>
 
 			<section id="closing-cta">
@@ -235,6 +232,20 @@ const latestBlogs = (await getCollection('blog'))
         margin: 0.5em auto 0;
         font-size: clamp(1rem, 2.5vw, 1.15rem);
     }
+    /* Editorial hero CTA (shown until the listings marketplace goes live) */
+    .hero-cta {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.9em;
+        margin-top: 1.8em;
+    }
+    .hero-cta .hero-link {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: underline;
+        font-weight: 700;
+    }
+    .hero-cta .hero-link:hover { color: #fff; }
 
     /* ---- Quick search ---- */
     .quick-search {

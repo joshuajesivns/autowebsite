@@ -12,12 +12,13 @@ interface Props {
 	description: string;
 	image?: ImageMetadata;
 	ogType?: 'website' | 'article';
+	noindex?: boolean;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 const site = Astro.site?.href ?? canonicalURL.origin + '/';
 
-const { title, description, image = FallbackImage, ogType = 'website' } = Astro.props;
+const { title, description, image = FallbackImage, ogType = 'website', noindex = false } = Astro.props;
 
 // Site-wide Organization entity — gives search engines + AI Overviews a single
 // authoritative identity (name, logo, NAP, official profiles) to attach trust to.
@@ -89,6 +90,10 @@ const siteSchema = {
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
+
+{/* Keep not-yet-real pages (e.g. the Coming Soon listings) out of the index
+    while still following their links. */}
+{noindex && <meta name="robots" content="noindex, follow" />}
 
 <!-- Primary Meta Tags -->
 <title>{title}</title>
