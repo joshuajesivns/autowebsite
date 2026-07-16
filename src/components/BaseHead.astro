@@ -78,6 +78,10 @@ const siteSchema = {
 	<meta name="google-site-verification" content={GOOGLE_SITE_VERIFICATION} />
 )}
 
+{/* AdSense site-ownership verification — a static tag is more reliable for review
+    than a JS-injected script. Rendered on every deploy once ADSENSE_CLIENT is set. */}
+{ADSENSE_CLIENT && <meta name="google-adsense-account" content={ADSENSE_CLIENT} />}
+
 <!-- Site-wide identity: Organization + WebSite (cross-linked by @id) -->
 <script type="application/ld+json" is:inline set:html={JSON.stringify(siteSchema)} />
 
