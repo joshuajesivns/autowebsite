@@ -58,6 +58,20 @@ export async function fileExists(path: string): Promise<boolean> {
 	throw new Error(`GitHub exists-check failed (${res.status}): ${detail.slice(0, 200)}`);
 }
 
+/** Fetch a text file's current content from the branch (for edit-in-place). null if absent. */
+export async function getFile(path: string): Promise<string | null> {
+	const res = await gh(`${repo}/contents/${encodeURIComponent(path).replace(/%2F/g, '/')}?ref=${GH_BRANCH}`);
+	if (res.status === 404) return null;
+	if (!res.ok) {
+		const detail = await res.text().catch(() => '');
+		throw new Error(`GitHub get-file failed (${res.status}): ${detail.slice(0, 200)}`);
+	}
+	const data = (await res.json()) as { content?: string; encoding?: string };
+	if (!data.content) return '';
+	// Contents API returns base64 (may include newlines); decode to utf-8.
+	return Buffer.from(data.content.replace(/\n/g, ''), 'base64').toString('utf-8');
+}
+
 /** Upload one binary file as a git blob; returns its sha for inclusion in a tree. */
 export async function createBlob(base64Content: string): Promise<string> {
 	const out = await ghJson<{ sha: string }>(`${repo}/git/blobs`, {

@@ -358,7 +358,12 @@ export function wordCount(body: string): number {
 }
 
 /** Everything the traffic-light panel renders. Advisory only. */
-export function analyzePost(parsed: ParsedPost, posts: PostIndexEntry[], currentSlug: string): Analysis {
+export function analyzePost(
+	parsed: ParsedPost,
+	posts: PostIndexEntry[],
+	currentSlug: string,
+	modelSlugs: string[] = [],
+): Analysis {
 	const ex = parseExtras(parsed.frontmatter);
 	const vertical = parsed.meta.vertical ?? '';
 	const headings = headingsOf(parsed.body);
@@ -430,13 +435,53 @@ export function analyzePost(parsed: ParsedPost, posts: PostIndexEntry[], current
 	if (recipe?.products && ex.hasProducts) nodes.push({ label: 'ItemList / Product', level: 'good' });
 
 	// ── Internal linking ───────────────────────────────────────────────────────
-	const targets = [...parsed.body.matchAll(/\]\((\/(?:blog|models)\/[^)\s]+)\)/g)].map((m) => m[1]);
+	const targetsRaw = [...parsed.body.matchAll(/\]\((\/(?:blog|models)\/[^)\s]+)\)/g)].map((m) => m[1]);
+	// Normalise for existence checks: strip trailing slash + #fragment.
+	const targets = targetsRaw.map((h) => h.replace(/#.*$/, ''));
 	const linkedSlugs = new Set(targets.map((h) => (h.match(/\/blog\/([^/]+)/) ?? [])[1]).filter(Boolean));
 	const checks: Check[] = [];
 	checks.push({
 		level: targets.length >= 2 ? 'good' : targets.length === 1 ? 'warn' : 'bad',
 		text: targets.length ? `${targets.length} internal link${targets.length > 1 ? 's' : ''} in the body.` : 'No internal links — add at least one to a related post.',
 	});
+
+	// Link-target validation — flag any /blog/ or /models/ link that won't resolve
+	// to a real page (the recurring "bottom links must point to real slugs or 404"
+	// problem). Deterministic: checks against the actual post + model slug indexes.
+	const postSlugSet = new Set(posts.map((p) => p.slug));
+	const modelSet = new Set(modelSlugs);
+	const broken: string[] = [];
+	for (const href of targets) {
+		const b = href.match(/^\/blog\/([^/]+)\/?$/);
+		const md = href.match(/^\/models\/([^/]+)\/?$/);
+		if (b) {
+			if (b[1] !== currentSlug && !postSlugSet.has(b[1])) broken.push(href);
+		} else if (md) {
+			if (!modelSet.has(md[1])) broken.push(href);
+		}
+	}
+	if (broken.length) {
+		checks.push({
+			level: 'bad',
+			text: `Broken internal link${broken.length > 1 ? 's' : ''} — target doesn't exist: ${broken.join(', ')}`,
+		});
+	} else if (targets.length) {
+		checks.push({ level: 'good', text: 'All internal link targets resolve to real pages.' });
+	}
+
+	// Anchor-diversity nudge — flag exact-match anchors (same as the target keyword
+	// / brand) and anchors reused verbatim across links (see the anchor-diversity
+	// rule in CONTENT_STYLE_GUIDE.md). Advisory only.
+	const anchors = [...parsed.body.matchAll(/\[([^\]]+)\]\(\/(?:blog|models)\/[^)\s]+\)/g)].map((m) => m[1].trim());
+	const anchorCounts = new Map<string, number>();
+	for (const a of anchors) anchorCounts.set(a.toLowerCase(), (anchorCounts.get(a.toLowerCase()) ?? 0) + 1);
+	const repeated = [...anchorCounts.entries()].filter(([, n]) => n > 1).map(([a]) => a);
+	if (repeated.length) {
+		checks.push({
+			level: 'warn',
+			text: `Repeated anchor text (vary it — avoid exact-match over-optimization): ${repeated.slice(0, 3).map((a) => `"${a}"`).join(', ')}.`,
+		});
+	}
 	const brand = (ex.vehicleBrand ?? '').toLowerCase();
 	const myTags = new Set(ex.tags.map((x) => x.toLowerCase()));
 	const suggestions = posts
@@ -497,4 +542,271 @@ export function applyAltText(mdx: string, alts: AltMap): string {
 	}
 
 	return `---\n${frontmatter}\n---\n${body}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Structured schema fields (vehicle / pms / featuredProducts).
+//
+// The paste-and-publish flow authors these via a form, so the tool can add rich
+// Vehicle/HowTo/Product JSON-LD to a post whose pasted MDX only carried the base
+// frontmatter. Two directions:
+//   • parse*  — read an existing block out of frontmatter to PRE-FILL the form
+//     (so editing a post that already has the block doesn't start blank).
+//   • serialize* + applyStructured — write the form values back into frontmatter.
+// Shapes mirror src/content.config.ts EXACTLY so a published post always builds.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import type { VehicleData, VehicleEngine, PmsData, PmsService, ProductData } from './schema';
+
+export interface StructuredFields {
+	vehicle?: VehicleData | null;
+	pms?: PmsData | null;
+	featuredProducts?: ProductData[] | null;
+}
+
+// ── YAML emit helpers ─────────────────────────────────────────────────────────
+/** Double-quote + escape a scalar for YAML. */
+function yq(s: string): string {
+	return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+const has = (s?: string) => typeof s === 'string' && s.trim() !== '';
+
+/** Serialize a vehicle object to indented YAML (indent = leading spaces). '' if empty. */
+export function serializeVehicle(v: VehicleData | null | undefined): string {
+	if (!v || !has(v.name)) return '';
+	const L: string[] = ['vehicle:'];
+	L.push(`  name: ${yq(v.name)}`);
+	if (has(v.brand)) L.push(`  brand: ${yq(v.brand!)}`);
+	if (has(v.model)) L.push(`  model: ${yq(v.model!)}`);
+	if (has(v.vehicleModelDate)) L.push(`  vehicleModelDate: ${yq(v.vehicleModelDate!)}`);
+	if (has(v.bodyType)) L.push(`  bodyType: ${yq(v.bodyType!)}`);
+	if (has(v.fuelType)) L.push(`  fuelType: ${yq(v.fuelType!)}`);
+	if (has(v.transmission)) L.push(`  transmission: ${yq(v.transmission!)}`);
+	if (v.drivetrain && ['FWD', 'RWD', 'AWD', '4WD'].includes(v.drivetrain)) L.push(`  drivetrain: ${yq(v.drivetrain)}`);
+	const engines = (v.engines ?? []).filter((e) => has(e.name));
+	if (engines.length) {
+		L.push('  engines:');
+		for (const e of engines) {
+			L.push(`    - name: ${yq(e.name)}`);
+			if (has(e.engineType)) L.push(`      engineType: ${yq(e.engineType!)}`);
+			if (has(e.power)) L.push(`      power: ${yq(e.power!)}`);
+			if (has(e.powerUnit)) L.push(`      powerUnit: ${yq(e.powerUnit!)}`);
+		}
+	}
+	return L.join('\n');
+}
+
+function serializePmsService(svc: PmsService | undefined, key: 'light' | 'heavy'): string[] {
+	if (!svc) return [];
+	const steps = (svc.steps ?? []).filter(has);
+	const hasCost = svc.costMin != null || svc.costMax != null;
+	if (!has(svc.name) && !has(svc.interval) && !hasCost && !steps.length) return [];
+	const L = [`  ${key}:`];
+	if (has(svc.name)) L.push(`    name: ${yq(svc.name)}`);
+	if (has(svc.interval)) L.push(`    interval: ${yq(svc.interval!)}`);
+	if (svc.costMin != null && Number.isFinite(svc.costMin)) L.push(`    costMin: ${svc.costMin}`);
+	if (svc.costMax != null && Number.isFinite(svc.costMax)) L.push(`    costMax: ${svc.costMax}`);
+	if (steps.length) {
+		L.push('    steps:');
+		for (const s of steps) L.push(`      - ${yq(s)}`);
+	}
+	return L;
+}
+
+/** Serialize a pms object to indented YAML. '' if it carries no light/heavy data. */
+export function serializePms(pms: PmsData | null | undefined): string {
+	if (!pms) return '';
+	const light = serializePmsService(pms.light, 'light');
+	const heavy = serializePmsService(pms.heavy, 'heavy');
+	if (!light.length && !heavy.length) return '';
+	return ['pms:', `  currency: ${yq(pms.currency || 'PHP')}`, ...light, ...heavy].join('\n');
+}
+
+/** Serialize featuredProducts to indented YAML. '' if the list is empty. */
+export function serializeProducts(products: ProductData[] | null | undefined): string {
+	const list = (products ?? []).filter((p) => has(p.name) && has(p.url));
+	if (!list.length) return '';
+	const L = ['featuredProducts:'];
+	for (const p of list) {
+		L.push(`  - name: ${yq(p.name)}`);
+		if (has(p.category)) L.push(`    category: ${yq(p.category!)}`);
+		if (has(p.brand)) L.push(`    brand: ${yq(p.brand!)}`);
+		if (has(p.description)) L.push(`    description: ${yq(p.description!)}`);
+		L.push(`    url: ${yq(p.url)}`);
+	}
+	return L.join('\n');
+}
+
+/** Drop a top-level `key:` and all of its indented/blank continuation lines. */
+function removeTopLevelKey(fm: string, key: string): string {
+	const lines = fm.split('\n');
+	const out: string[] = [];
+	let i = 0;
+	const head = new RegExp(`^${key}:(\\s|$)`);
+	while (i < lines.length) {
+		if (head.test(lines[i])) {
+			i++;
+			while (i < lines.length && (lines[i].trim() === '' || /^\s/.test(lines[i]))) i++;
+			continue;
+		}
+		out.push(lines[i]);
+		i++;
+	}
+	return out.join('\n');
+}
+
+/**
+ * Merge structured blocks into a post's frontmatter. Only keys PRESENT (non-null)
+ * on `fields` are touched — a null/undefined key leaves the post's existing block
+ * untouched, so an untouched form section can never silently wipe real data. A
+ * present-but-empty value removes the block.
+ */
+export function applyStructured(mdx: string, fields: StructuredFields): string {
+	const p = parsePost(mdx);
+	if (!p.ok) return mdx;
+	let fm = p.frontmatter;
+
+	const jobs: [keyof StructuredFields, string, () => string][] = [
+		['vehicle', 'vehicle', () => serializeVehicle(fields.vehicle)],
+		['pms', 'pms', () => serializePms(fields.pms)],
+		['featuredProducts', 'featuredProducts', () => serializeProducts(fields.featuredProducts)],
+	];
+	for (const [field, key, ser] of jobs) {
+		if (!(field in fields) || fields[field] === undefined) continue; // untouched → leave as-is
+		fm = removeTopLevelKey(fm, key).replace(/\n+$/, '');
+		const block = ser();
+		if (block) fm = `${fm}\n${block}`;
+	}
+	fm = fm.replace(/\n{3,}/g, '\n\n');
+	return `---\n${fm}\n---\n${p.body}`;
+}
+
+// ── Parsers (read an existing block back into form values) ─────────────────────
+function unquote(s: string): string {
+	const t = s.trim();
+	const m = t.match(/^"([\s\S]*)"$/) || t.match(/^'([\s\S]*)'$/);
+	if (m) return m[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+	return t.replace(/\s*#.*$/, '').trim();
+}
+
+/** Grab the lines under `key:` at ANY nesting level (indent-aware, unlike indentedBlock). */
+function subBlock(text: string, key: string): string | null {
+	const lines = text.split('\n');
+	let i = -1;
+	let keyIndent = 0;
+	for (let j = 0; j < lines.length; j++) {
+		const m = lines[j].match(new RegExp(`^(\\s*)${key}:(\\s|$)`));
+		if (m) {
+			i = j;
+			keyIndent = m[1].length;
+			break;
+		}
+	}
+	if (i === -1) return null;
+	const out: string[] = [];
+	for (let j = i + 1; j < lines.length; j++) {
+		if (lines[j].trim() === '') {
+			out.push(lines[j]);
+			continue;
+		}
+		if ((lines[j].match(/^\s*/)![0].length) <= keyIndent) break;
+		out.push(lines[j]);
+	}
+	return out.join('\n');
+}
+
+/** Split a YAML list under `key` into per-item text blocks (dash-item bodies, dedented). */
+function listItemsUnder(block: string, key: string): string[] {
+	const lines = block.split('\n');
+	const startIdx = lines.findIndex((l) => new RegExp(`^\\s*${key}:\\s*$`).test(l));
+	if (startIdx === -1) return [];
+	const keyIndent = (lines[startIdx].match(/^\s*/)?.[0].length) ?? 0;
+	const items: string[] = [];
+	let cur: string[] | null = null;
+	let dashIndent = -1;
+	for (let j = startIdx + 1; j < lines.length; j++) {
+		const line = lines[j];
+		if (line.trim() === '') continue;
+		const indent = line.match(/^\s*/)![0].length;
+		if (indent <= keyIndent) break;
+		const dash = line.match(/^(\s*)-\s?(.*)$/);
+		if (dash && (dashIndent === -1 || dash[1].length === dashIndent)) {
+			dashIndent = dash[1].length;
+			if (cur) items.push(cur.join('\n'));
+			cur = [dash[2]];
+		} else if (cur) {
+			cur.push(line.slice(dashIndent + 2));
+		}
+	}
+	if (cur) items.push(cur.join('\n'));
+	return items;
+}
+
+/** Parse a `vehicle:` block out of frontmatter into form values (null if absent). */
+export function parseVehicle(fm: string): VehicleData | null {
+	const block = subBlock(fm, 'vehicle');
+	if (block == null) return null;
+	const engines: VehicleEngine[] = listItemsUnder(block, 'engines').map((it) => ({
+		name: scalarIn(it, 'name') ?? '',
+		engineType: scalarIn(it, 'engineType'),
+		power: scalarIn(it, 'power'),
+		powerUnit: scalarIn(it, 'powerUnit'),
+	}));
+	const drivetrain = scalarIn(block, 'drivetrain') as VehicleData['drivetrain'] | undefined;
+	return {
+		name: scalarIn(block, 'name') ?? '',
+		brand: scalarIn(block, 'brand') ?? '',
+		model: scalarIn(block, 'model') ?? '',
+		vehicleModelDate: scalarIn(block, 'vehicleModelDate'),
+		bodyType: scalarIn(block, 'bodyType'),
+		fuelType: scalarIn(block, 'fuelType'),
+		transmission: scalarIn(block, 'transmission'),
+		drivetrain: drivetrain && ['FWD', 'RWD', 'AWD', '4WD'].includes(drivetrain) ? drivetrain : undefined,
+		engines: engines.length ? engines : undefined,
+	};
+}
+
+function parsePmsService(fm: string, key: 'light' | 'heavy'): PmsService | undefined {
+	const block = subBlock(fm, key);
+	if (block == null) return undefined;
+	const min = scalarIn(block, 'costMin');
+	const max = scalarIn(block, 'costMax');
+	const steps = listItemsUnder(block, 'steps').map((s) => unquote(s)).filter(Boolean);
+	return {
+		name: scalarIn(block, 'name') ?? '',
+		interval: scalarIn(block, 'interval'),
+		costMin: min != null && min !== '' ? Number(min) : undefined,
+		costMax: max != null && max !== '' ? Number(max) : undefined,
+		steps: steps.length ? steps : undefined,
+	};
+}
+
+/** Parse a `pms:` block out of frontmatter into form values (null if absent). */
+export function parsePms(fm: string): PmsData | null {
+	const block = subBlock(fm, 'pms');
+	if (block == null) return null;
+	return {
+		currency: scalarIn(block, 'currency') ?? 'PHP',
+		light: parsePmsService(block, 'light'),
+		heavy: parsePmsService(block, 'heavy'),
+	};
+}
+
+/** Parse a `featuredProducts:` block out of frontmatter into form values (null if absent). */
+export function parseProducts(fm: string): ProductData[] | null {
+	if (!/^featuredProducts:/m.test(fm)) return null;
+	// The list sits at top level, so scope to the block under the key.
+	const block = 'featuredProducts:\n' + (subBlock(fm, 'featuredProducts') ?? '');
+	return listItemsUnder(block, 'featuredProducts').map((it) => ({
+		name: scalarIn(it, 'name') ?? '',
+		category: scalarIn(it, 'category'),
+		brand: scalarIn(it, 'brand'),
+		description: scalarIn(it, 'description'),
+		url: scalarIn(it, 'url') ?? '',
+	}));
+}
+
+/** Read all three structured blocks at once (for pre-filling the publish form). */
+export function parseStructured(fm: string): { vehicle: VehicleData | null; pms: PmsData | null; featuredProducts: ProductData[] | null } {
+	return { vehicle: parseVehicle(fm), pms: parsePms(fm), featuredProducts: parseProducts(fm) };
 }

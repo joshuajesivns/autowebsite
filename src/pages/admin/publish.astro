@@ -12,15 +12,26 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 <PageLayout title="Publish a Post" description="Paste an AI-written MDX article, review its SEO/schema/links, and publish it to Apex Engine.">
 	<p class="lede">
 		Paste the finished MDX, click <strong>Analyze</strong> for the Google preview + checks (content, images/alt,
-		schema, internal links), fill in alt text and attach photos, then <strong>Publish</strong>. A bad paste can't
+		schema, internal links), add schema fields + alt text + photos, then <strong>Publish</strong>. A bad paste can't
 		break the live site — a failed build just keeps the last good version.
 	</p>
+
+	<div id="editBanner" class="edit-banner" hidden>
+		<span><strong>Editing <code id="editSlugLabel"></code></strong> — publishing overwrites the live post.</span>
+		<button id="exitEditBtn" type="button" class="link-btn">Start a new post instead</button>
+	</div>
+
+	<div class="draft-note" id="draftNote" hidden>
+		<span>Restored an unsaved draft from this browser.</span>
+		<button id="clearDraftBtn" type="button" class="link-btn">Clear it</button>
+	</div>
 
 	<label class="field-label" for="mdx">Article MDX</label>
 	<textarea id="mdx" placeholder="Paste the full MDX (--- frontmatter --- then the body)…" spellcheck="false"></textarea>
 
 	<div class="row">
 		<button id="scanBtn" type="button" class="primary">Analyze</button>
+		<span class="muted kbd-hint">or press <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Enter</kbd></span>
 		<span id="scanMsg" class="muted"></span>
 	</div>
 
@@ -47,8 +58,18 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		<div class="field-group" id="slugGroup" hidden>
 			<label class="field-label" for="slug">Slug (the URL: /blog/<span id="slugEcho">…</span>/)</label>
 			<input type="text" id="slug" />
-			<p id="slugWarn" class="warn" hidden></p>
+			<div id="slugWarn" class="warn-row" hidden>
+				<span id="slugWarnText" class="warn"></span>
+				<button id="editBtn" type="button" class="link-btn">Load &amp; edit that post →</button>
+			</div>
 		</div>
+
+		<!-- Structured schema fields (vehicle / pms / featuredProducts), built per vertical -->
+		<section id="schemaFields" hidden>
+			<h2 class="section-h">Schema fields</h2>
+			<p class="muted">These feed the post's JSON-LD (Vehicle / HowTo / Product). Pre-filled from your MDX if present. Leave a section blank to skip it; fill it to enrich the schema — no need to hand-write YAML.</p>
+			<div id="sfPanels"></div>
+		</section>
 
 		<div id="slotsWrap" hidden>
 			<h2 class="section-h">Images &amp; alt text</h2>
@@ -68,6 +89,8 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 <script>
 	const $ = (id) => document.getElementById(id);
 	let scanned = null; // { slots }
+	let editMode = null; // slug string when editing an existing post
+	const DRAFT_KEY = 'apex-publish-draft';
 
 	function esc(s) {
 		return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -162,7 +185,6 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 
 	// ── Approximate MDX → HTML preview (client-side, no dependency) ─────────────
 	function inlineMd(s) {
-		// escape first, then apply inline markdown
 		s = esc(s);
 		s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 		s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -172,7 +194,6 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	}
 
 	function mdToHtml(body) {
-		// Preprocess MDX: drop imports/comments, map components to plain blocks.
 		body = body
 			.replace(/^import\s.+$/gm, '')
 			.replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
@@ -181,7 +202,7 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 			.replace(/<Figure\b[^>]*?\/>/g, '\n\n§FIG§§FIG§\n\n')
 			.replace(/<\/?Split\b[^>]*>/g, '')
 			.replace(/<\/?Gallery\b[^>]*>/g, '')
-			.replace(/<[^>\n]+\/>/g, ''); // any other self-closing JSX
+			.replace(/<[^>\n]+\/>/g, '');
 
 		const lines = body.split('\n');
 		const out = [];
@@ -195,25 +216,21 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 
 			if (!raw.trim()) { flushPara(para); para = []; i++; continue; }
 
-			// special markers
 			let mk = raw.match(/^§PQ§([\s\S]*)§PQ§$/);
 			if (mk) { flushPara(para); para = []; out.push(`<blockquote class="prev-pq">${inlineMd(mk[1])}</blockquote>`); i++; continue; }
 			mk = raw.match(/^§FIG§(.*)§FIG§$/);
 			if (mk) { flushPara(para); para = []; out.push(`<figure class="prev-fig"><div class="prev-fig-ph">🖼 image</div>${mk[1] ? `<figcaption>${esc(mk[1])}</figcaption>` : ''}</figure>`); i++; continue; }
 
-			// heading
 			mk = raw.match(/^(#{1,6})\s+(.*)$/);
 			if (mk) { flushPara(para); para = []; const lvl = Math.min(mk[1].length, 6); out.push(`<h${lvl}>${inlineMd(mk[2])}</h${lvl}>`); i++; continue; }
 
-			// hr
 			if (/^(-{3,}|\*{3,})$/.test(raw.trim())) { flushPara(para); para = []; out.push('<hr />'); i++; continue; }
 
-			// table
 			if (/^\s*\|/.test(raw) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
 				flushPara(para); para = [];
 				const cells = (r) => r.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
 				const head = cells(raw);
-				i += 2; // skip header + separator
+				i += 2;
 				const rows = [];
 				while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
 				let t = '<table><thead><tr>' + head.map((c) => `<th>${inlineMd(c)}</th>`).join('') + '</tr></thead><tbody>';
@@ -223,7 +240,6 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 				continue;
 			}
 
-			// unordered list
 			if (/^\s*[-*]\s+/.test(raw)) {
 				flushPara(para); para = [];
 				const items = [];
@@ -231,7 +247,6 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 				out.push('<ul>' + items.map((it) => `<li>${inlineMd(it)}</li>`).join('') + '</ul>');
 				continue;
 			}
-			// ordered list
 			if (/^\s*\d+\.\s+/.test(raw)) {
 				flushPara(para); para = [];
 				const items = [];
@@ -239,7 +254,6 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 				out.push('<ol>' + items.map((it) => `<li>${inlineMd(it)}</li>`).join('') + '</ol>');
 				continue;
 			}
-			// blockquote
 			if (/^\s*>\s?/.test(raw)) {
 				flushPara(para); para = [];
 				const q = [];
@@ -262,6 +276,183 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		$('previewBody').innerHTML = mdToHtml(body) || '<p class="muted">Nothing to preview yet.</p>';
 	}
 
+	// ── Structured schema fields ────────────────────────────────────────────────
+	function field(label, id, value, ph = '', type = 'text') {
+		return `<label class="sf-field"><span>${label}</span><input type="${type}" id="${id}" value="${esc(value ?? '')}" placeholder="${esc(ph)}" /></label>`;
+	}
+	function engineRow(e = {}) {
+		return `<div class="eng-row sf-repeat-row">
+			<input class="eng-name" placeholder="Engine name*, e.g. 4A-GE (NA)" value="${esc(e.name || '')}" />
+			<input class="eng-type" placeholder="Type, e.g. 1.6L DOHC NA" value="${esc(e.engineType || '')}" />
+			<input class="eng-power" placeholder="Power, e.g. 120–140" value="${esc(e.power || '')}" />
+			<input class="eng-unit" placeholder="Unit (PS)" value="${esc(e.powerUnit || '')}" />
+			<button type="button" class="row-del" title="Remove">✕</button>
+		</div>`;
+	}
+	function stepRow(prefix, s = '') {
+		return `<div class="step-row sf-repeat-row"><input placeholder="Service step, e.g. Engine oil + filter" value="${esc(s)}" /><button type="button" class="row-del" title="Remove">✕</button></div>`;
+	}
+	function prodRow(p = {}) {
+		return `<div class="prod-row sf-repeat-row prod">
+			<input class="prod-name" placeholder="Product name*" value="${esc(p.name || '')}" />
+			<input class="prod-cat" placeholder="Category" value="${esc(p.category || '')}" />
+			<input class="prod-brand" placeholder="Brand" value="${esc(p.brand || '')}" />
+			<input class="prod-url" placeholder="Affiliate URL*" value="${esc(p.url || '')}" />
+			<input class="prod-desc" placeholder="Your take / why it fits" value="${esc(p.description || '')}" />
+			<button type="button" class="row-del" title="Remove">✕</button>
+		</div>`;
+	}
+	function pmsServicePanel(key, title, svc) {
+		svc = svc || {};
+		const steps = (svc.steps || []).map((s) => stepRow(key, s)).join('') || stepRow(key);
+		return `<fieldset class="sf-sub"><legend>${title}</legend>
+			<div class="sf-grid">
+				${field('Name', `${key}-name`, svc.name, key === 'light' ? 'Light (Minor) PMS' : 'Heavy (Major) PMS')}
+				${field('Interval', `${key}-interval`, svc.interval, 'e.g. 10,000 km / 6 months')}
+				${field('Cost min (₱)', `${key}-min`, svc.costMin, 'e.g. 1500', 'number')}
+				${field('Cost max (₱)', `${key}-max`, svc.costMax, 'e.g. 2500', 'number')}
+			</div>
+			<div class="sf-repeat" id="${key}-steps" data-add="step" data-key="${key}">
+				<span class="sf-repeat-label">Steps</span>${steps}
+				<button type="button" class="add-row" data-add="step" data-key="${key}">+ Add step</button>
+			</div>
+		</fieldset>`;
+	}
+
+	function renderSchemaFields(recipe, s) {
+		const wrap = $('schemaFields');
+		if (!recipe || !(recipe.vehicle || recipe.howto || recipe.products)) {
+			wrap.hidden = true;
+			$('sfPanels').innerHTML = '';
+			return;
+		}
+		wrap.hidden = false;
+		const parts = [];
+
+		if (recipe.vehicle) {
+			const v = s?.vehicle || {};
+			const drives = ['', 'FWD', 'RWD', 'AWD', '4WD'];
+			const engines = (v.engines || []).map(engineRow).join('') || engineRow();
+			parts.push(`<details class="sf-panel" id="vehPanel" ${v.name ? 'open' : ''}>
+				<summary><span class="panel-title">Vehicle</span><span class="panel-badge muted">${v.name ? 'present' : 'optional'}</span></summary>
+				<div class="panel-body">
+					<div class="sf-grid">
+						${field('Display name*', 'veh-name', v.name, 'e.g. Toyota Corolla AE92 (Levin / Trueno)')}
+						${field('Brand', 'veh-brand', v.brand, 'e.g. Toyota')}
+						${field('Model', 'veh-model', v.model, 'e.g. Corolla AE92')}
+						${field('Model years', 'veh-date', v.vehicleModelDate, 'e.g. 1987/1991')}
+						${field('Body type', 'veh-body', v.bodyType, 'e.g. Coupe')}
+						${field('Fuel type', 'veh-fuel', v.fuelType, 'e.g. Gasoline')}
+						${field('Transmission', 'veh-trans', v.transmission, 'e.g. 5-speed manual')}
+						<label class="sf-field"><span>Drivetrain</span><select id="veh-drive">${drives.map((d) => `<option value="${d}" ${v.drivetrain === d ? 'selected' : ''}>${d || '—'}</option>`).join('')}</select></label>
+					</div>
+					<div class="sf-repeat" id="veh-engines" data-add="engine">
+						<span class="sf-repeat-label">Engines</span>${engines}
+						<button type="button" class="add-row" data-add="engine">+ Add engine</button>
+					</div>
+				</div>
+			</details>`);
+		}
+
+		if (recipe.howto) {
+			const p = s?.pms || {};
+			const on = (p.light || p.heavy);
+			parts.push(`<details class="sf-panel" id="pmsPanel" ${on ? 'open' : ''}>
+				<summary><span class="panel-title">PMS servicing</span><span class="panel-badge muted">${on ? 'present' : 'optional'}</span></summary>
+				<div class="panel-body">
+					${field('Currency', 'pms-currency', p.currency || 'PHP', 'PHP')}
+					${pmsServicePanel('light', 'Light (Minor) PMS', p.light)}
+					${pmsServicePanel('heavy', 'Heavy (Major) PMS', p.heavy)}
+				</div>
+			</details>`);
+		}
+
+		if (recipe.products) {
+			const list = (s?.featuredProducts || []);
+			const rows = list.map(prodRow).join('') || prodRow();
+			parts.push(`<details class="sf-panel" id="prodPanel" ${list.length ? 'open' : ''}>
+				<summary><span class="panel-title">Recommended products</span><span class="panel-badge muted">${list.length ? `${list.length}` : 'optional'}</span></summary>
+				<div class="panel-body">
+					<p class="muted sf-hint">Only add products the post actually shows — this renders a visible "Recommended parts" block <em>and</em> the Product schema from the same data. No prices (they go stale).</p>
+					<div class="sf-repeat" id="prod-list" data-add="prod">
+						${rows}
+						<button type="button" class="add-row" data-add="prod">+ Add product</button>
+					</div>
+				</div>
+			</details>`);
+		}
+
+		$('sfPanels').innerHTML = parts.join('');
+	}
+
+	// Add/remove repeater rows via delegation.
+	document.addEventListener('click', (e) => {
+		const add = e.target.closest('.add-row');
+		if (add) {
+			const kind = add.dataset.add;
+			let html = '';
+			if (kind === 'engine') html = engineRow();
+			else if (kind === 'prod') html = prodRow();
+			else if (kind === 'step') html = stepRow(add.dataset.key);
+			add.insertAdjacentHTML('beforebegin', html);
+			return;
+		}
+		const del = e.target.closest('.row-del');
+		if (del) { del.closest('.sf-repeat-row')?.remove(); }
+	});
+
+	function val(sel, root = document) { const el = root.querySelector(sel); return el ? el.value.trim() : ''; }
+	function numOr(v) { const n = Number(v); return v !== '' && Number.isFinite(n) ? n : undefined; }
+
+	// Read the schema forms back into a { vehicle?, pms?, featuredProducts? } payload.
+	// Only sections whose panel is rendered are included — so a vertical that doesn't
+	// show a panel (e.g. news) never touches that block. A rendered-but-empty section
+	// sends null → removes the block (deliberate; the form was pre-filled if data existed).
+	function collectStructured() {
+		const out = {};
+		if ($('schemaFields').hidden) return out;
+
+		if ($('vehPanel')) {
+			const engines = [...document.querySelectorAll('#veh-engines .eng-row')]
+				.map((r) => ({ name: val('.eng-name', r), engineType: val('.eng-type', r), power: val('.eng-power', r), powerUnit: val('.eng-unit', r) }))
+				.filter((x) => x.name);
+			const name = val('#veh-name');
+			out.vehicle = name
+				? {
+						name,
+						brand: val('#veh-brand'),
+						model: val('#veh-model'),
+						vehicleModelDate: val('#veh-date') || undefined,
+						bodyType: val('#veh-body') || undefined,
+						fuelType: val('#veh-fuel') || undefined,
+						transmission: val('#veh-trans') || undefined,
+						drivetrain: val('#veh-drive') || undefined,
+						engines: engines.length ? engines : undefined,
+					}
+				: null;
+		}
+
+		if ($('pmsPanel')) {
+			const svc = (key) => {
+				const steps = [...document.querySelectorAll(`#${key}-steps .step-row input`)].map((i) => i.value.trim()).filter(Boolean);
+				const name = val(`#${key}-name`), interval = val(`#${key}-interval`), min = val(`#${key}-min`), max = val(`#${key}-max`);
+				if (!name && !interval && !min && !max && !steps.length) return undefined;
+				return { name: name || undefined, interval: interval || undefined, costMin: numOr(min), costMax: numOr(max), steps: steps.length ? steps : undefined };
+			};
+			const light = svc('light'), heavy = svc('heavy');
+			out.pms = light || heavy ? { currency: val('#pms-currency') || 'PHP', light, heavy } : null;
+		}
+
+		if ($('prodPanel')) {
+			const list = [...document.querySelectorAll('#prod-list .prod-row')]
+				.map((r) => ({ name: val('.prod-name', r), category: val('.prod-cat', r), brand: val('.prod-brand', r), description: val('.prod-desc', r), url: val('.prod-url', r) }))
+				.filter((x) => x.name && x.url);
+			out.featuredProducts = list.length ? list : null;
+		}
+		return out;
+	}
+
+	// ── Scan / Analyze ──────────────────────────────────────────────────────────
 	async function scan() {
 		const mdx = $('mdx').value;
 		$('scanMsg').textContent = 'Analyzing…';
@@ -269,7 +460,7 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		$('done').hidden = true;
 		let r;
 		try {
-			r = await api({ action: 'scan', mdx });
+			r = await api({ action: 'scan', mdx, editSlug: editMode || '' });
 		} catch (e) {
 			$('scanMsg').textContent = 'Analyze failed: ' + e.message;
 			return;
@@ -288,13 +479,15 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		if (r.preview) renderPreview(r.preview);
 		if (r.analysis) renderPanels(r.analysis);
 		renderArticlePreview($('mdx').value);
+		renderSchemaFields(r.recipe, r.structured);
 
 		// slug
 		$('slugGroup').hidden = false;
 		$('slug').value = r.slug || '';
+		$('slug').readOnly = !!editMode;
 		$('slugEcho').textContent = r.slug || '…';
 		$('slugWarn').hidden = !r.slugTaken;
-		if (r.slugTaken) $('slugWarn').textContent = `⚠ A post "${r.slug}" already exists — change the slug or it will be rejected.`;
+		if (r.slugTaken) $('slugWarnText').textContent = `⚠ A post "${r.slug}" already exists.`;
 
 		// slots (with alt fields)
 		const slots = r.slots || [];
@@ -333,8 +526,32 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		$('slug').oninput = () => ($('slugEcho').textContent = $('slug').value || '…');
 		// Publish blocked only on hard errors / slug clash — 🟠 warnings are advisory.
 		$('publishBtn').disabled = (r.errors && r.errors.length > 0) || !!r.slugTaken;
+		$('publishBtn').textContent = editMode ? 'Update post' : 'Publish';
 	}
 
+	// ── Edit mode ─────────────────────────────────────────────────────────────
+	async function loadForEdit() {
+		const slug = $('slug').value.trim();
+		if (!slug) return;
+		$('scanMsg').textContent = `Loading "${slug}"…`;
+		let r;
+		try { r = await api({ action: 'load', slug }); } catch (e) { $('scanMsg').textContent = 'Load failed: ' + e.message; return; }
+		if (!r.ok) { $('scanMsg').textContent = r.error || 'Load failed.'; return; }
+		editMode = r.slug;
+		$('mdx').value = r.mdx;
+		$('editSlugLabel').textContent = r.slug;
+		$('editBanner').hidden = false;
+		saveDraft();
+		await scan();
+	}
+	function exitEdit() {
+		editMode = null;
+		$('editBanner').hidden = true;
+		$('slug').readOnly = false;
+		$('publishBtn').textContent = 'Publish';
+	}
+
+	// ── Publish ───────────────────────────────────────────────────────────────
 	async function publish() {
 		if (!scanned) return;
 		const btn = $('publishBtn');
@@ -361,14 +578,16 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 				else uploads.body[id] = { sha: up.sha, ext: up.ext };
 			}
 
-			msg.textContent = 'Publishing…';
-			const r = await api({ action: 'publish', mdx: $('mdx').value, slug: $('slug').value, uploads, alts });
+			const structured = collectStructured();
+			msg.textContent = editMode ? 'Updating…' : 'Publishing…';
+			const r = await api({ action: 'publish', mdx: $('mdx').value, slug: $('slug').value, uploads, alts, structured, edit: !!editMode });
 			if (!r.ok) throw new Error((r.errors && r.errors.join('; ')) || r.error || 'publish failed');
 
 			msg.textContent = '';
+			clearDraft();
 			$('done').hidden = false;
 			$('done').innerHTML =
-				`<strong>✓ Published.</strong> Vercel is now building — your post will be live at ` +
+				`<strong>✓ ${r.edited ? 'Updated' : 'Published'}.</strong> Vercel is now building — your post will be live at ` +
 				`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.url)}</a> in a minute or two.`;
 		} catch (e) {
 			msg.textContent = 'Error: ' + e.message;
@@ -376,8 +595,32 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		}
 	}
 
+	// ── Draft autosave (localStorage) ───────────────────────────────────────────
+	let saveTimer = null;
+	function saveDraft() {
+		try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ mdx: $('mdx').value, editMode })); } catch {}
+	}
+	function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch {} $('draftNote').hidden = true; }
+	function restoreDraft() {
+		let d;
+		try { d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null'); } catch { d = null; }
+		if (d && d.mdx && !$('mdx').value) {
+			$('mdx').value = d.mdx;
+			if (d.editMode) { editMode = d.editMode; $('editSlugLabel').textContent = d.editMode; $('editBanner').hidden = false; }
+			$('draftNote').hidden = false;
+		}
+	}
+
+	$('mdx').addEventListener('input', () => { clearTimeout(saveTimer); saveTimer = setTimeout(saveDraft, 600); });
+	$('mdx').addEventListener('keydown', (e) => {
+		if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); scan(); }
+	});
 	$('scanBtn').addEventListener('click', scan);
 	$('publishBtn').addEventListener('click', publish);
+	$('editBtn').addEventListener('click', loadForEdit);
+	$('exitEditBtn').addEventListener('click', exitEdit);
+	$('clearDraftBtn').addEventListener('click', () => { $('mdx').value = ''; exitEdit(); clearDraft(); });
+	restoreDraft();
 </script>
 
 <style>
@@ -388,14 +631,23 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 		font-size: 0.85rem; line-height: 1.5; border: 1px solid var(--metal-gray-light); background: var(--paper); resize: vertical;
 	}
 	textarea:focus-visible { outline: 2px solid var(--accent-color); }
-	.row { display: flex; align-items: center; gap: 1em; margin-top: 1em; }
+	.row { display: flex; align-items: center; gap: 1em; margin-top: 1em; flex-wrap: wrap; }
 	.publish-row { margin-top: 2em; border-top: 1px solid var(--line); padding-top: 1.5em; }
 	.muted { color: var(--metal-gray); font-size: 0.9rem; }
-	.warn { color: var(--red-mica-dark, #B91C1C); font-weight: 700; font-size: 0.85rem; margin-top: 0.4em; }
-	input[type='text'] { width: 100%; max-width: 620px; padding: 0.6em; border: 1px solid var(--metal-gray-light); background: var(--paper); font-family: inherit; }
+	.kbd-hint { font-size: 0.8rem; }
+	kbd { font-family: ui-monospace, monospace; font-size: 0.75rem; border: 1px solid var(--metal-gray-light); border-bottom-width: 2px; border-radius: 4px; padding: 0.05em 0.4em; background: var(--paper-off); }
+	.warn { color: var(--red-mica-dark, #B91C1C); font-weight: 700; font-size: 0.85rem; }
+	.warn-row { display: flex; align-items: center; gap: 1em; margin-top: 0.4em; flex-wrap: wrap; }
+	input[type='text'], input[type='number'], select { width: 100%; max-width: 620px; padding: 0.6em; border: 1px solid var(--metal-gray-light); background: var(--paper); font-family: inherit; color: var(--text-color); }
 	.err-box { background: #FEF2F2; border-left: 4px solid var(--red-mica-dark, #B91C1C); padding: 0.75em 1em; margin: 1em 0; }
 	.err-box ul { margin: 0.5em 0 0; padding-left: 1.2em; }
 	.ok-box { color: #166534; font-weight: 700; margin: 1em 0; }
+	.link-btn { background: none; border: none; color: var(--red-mica); font-weight: 700; cursor: pointer; padding: 0; font-size: 0.85rem; text-decoration: underline; font-family: inherit; }
+
+	.edit-banner { display: flex; align-items: center; gap: 1em; flex-wrap: wrap; background: #EFF6FF; border-left: 4px solid #2563eb; padding: 0.6em 1em; margin: 0.5em 0 1em; font-size: 0.9rem; }
+	.edit-banner code { background: rgba(37,99,235,0.12); padding: 0.05em 0.4em; border-radius: 3px; }
+	.draft-note { display: flex; align-items: center; gap: 1em; background: var(--paper-off); padding: 0.5em 1em; margin: 0.5em 0; font-size: 0.85rem; color: var(--metal-gray); }
+	@media (prefers-color-scheme: dark) { .edit-banner { background: rgba(37,99,235,0.15); } }
 
 	/* level colors */
 	.lv-good { color: #166534; }
@@ -460,6 +712,30 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	.prev-fig { margin: 1.5em 0; }
 	.prev-fig-ph { background: var(--paper-off); border: 1px dashed var(--metal-gray-light); color: var(--metal-gray); padding: 2em; text-align: center; font-size: 0.9rem; }
 	.prev-fig figcaption { margin-top: 0.5em; padding-left: 0.75em; border-left: 3px solid var(--red-mica); font-size: 0.85rem; color: var(--metal-gray); }
+
+	/* structured schema fields */
+	#schemaFields { margin-top: 1.5em; }
+	.sf-panel { border: 1px solid var(--line); border-radius: 6px; background: var(--paper); margin-bottom: 0.6em; }
+	.sf-panel summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.7em 1em; font-weight: 700; }
+	.sf-panel .panel-badge.muted { text-transform: none; letter-spacing: 0; font-weight: 400; }
+	.sf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6em 1em; }
+	@media (max-width: 640px) { .sf-grid { grid-template-columns: 1fr; } }
+	.sf-field { display: flex; flex-direction: column; gap: 0.25em; }
+	.sf-field span { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--metal-gray); }
+	.sf-field input, .sf-field select { max-width: 100%; }
+	.sf-sub { border: 1px solid var(--line); border-radius: 6px; padding: 0.8em 1em 1em; margin-top: 0.8em; }
+	.sf-sub legend { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0 0.4em; }
+	.sf-repeat { margin-top: 0.8em; }
+	.sf-repeat-label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--metal-gray); margin-bottom: 0.4em; }
+	.sf-repeat-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 0.5em; margin-bottom: 0.5em; align-items: center; }
+	.sf-repeat-row.prod { grid-template-columns: repeat(5, minmax(0, 1fr)) auto; }
+	.step-row { grid-template-columns: 1fr auto; }
+	.sf-repeat-row input { max-width: 100%; padding: 0.45em; font-size: 0.85rem; }
+	@media (max-width: 720px) { .sf-repeat-row, .sf-repeat-row.prod { grid-template-columns: 1fr auto; } }
+	.row-del { border: 1px solid var(--metal-gray-light); background: var(--paper-off); color: var(--metal-gray); cursor: pointer; border-radius: 4px; width: 2em; height: 2em; font-size: 0.9rem; }
+	.row-del:hover { color: var(--red-mica); border-color: var(--red-mica); }
+	.add-row { background: none; border: 1px dashed var(--metal-gray-light); color: var(--red-mica); cursor: pointer; padding: 0.45em 0.9em; border-radius: 4px; font-weight: 700; font-size: 0.8rem; font-family: inherit; }
+	.sf-hint { margin: 0 0 0.8em; font-size: 0.82rem; }
 
 	.section-h { font-size: 1.2rem; text-transform: uppercase; margin: 1.5em 0 0.3em; }
 	.slot { border-bottom: 1px solid var(--line); padding: 0.9em 0; display: grid; gap: 0.5em; }
