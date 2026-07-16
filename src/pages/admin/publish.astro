@@ -530,8 +530,8 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	}
 
 	// ── Edit mode ─────────────────────────────────────────────────────────────
-	async function loadForEdit() {
-		const slug = $('slug').value.trim();
+	async function loadForEdit(slugArg) {
+		const slug = (slugArg || $('slug').value).trim();
 		if (!slug) return;
 		$('scanMsg').textContent = `Loading "${slug}"…`;
 		let r;
@@ -617,10 +617,15 @@ if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
 	});
 	$('scanBtn').addEventListener('click', scan);
 	$('publishBtn').addEventListener('click', publish);
-	$('editBtn').addEventListener('click', loadForEdit);
+	$('editBtn').addEventListener('click', () => loadForEdit());
 	$('exitEditBtn').addEventListener('click', exitEdit);
 	$('clearDraftBtn').addEventListener('click', () => { $('mdx').value = ''; exitEdit(); clearDraft(); });
-	restoreDraft();
+
+	// Deep-link: /admin/publish/?edit=<slug> (from the Posts list) loads that post
+	// straight into edit mode. Otherwise fall back to restoring any autosaved draft.
+	const editParam = new URLSearchParams(location.search).get('edit');
+	if (editParam) loadForEdit(editParam);
+	else restoreDraft();
 </script>
 
 <style>

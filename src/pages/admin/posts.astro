@@ -1,0 +1,164 @@
+---
+export const prerender = false;
+
+import PageLayout from '../../layouts/Page.astro';
+import { ADMIN_COOKIE_NAME, isValidAdminSession } from '../../lib/adminAuth';
+import { getCollection } from 'astro:content';
+import { RECIPE, type Vertical } from '../../lib/schema';
+
+if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
+	return Astro.redirect('/admin/login');
+}
+
+const raw = await getCollection('blog');
+const posts = raw
+	.map((p) => {
+		const vertical = p.data.vertical as Vertical;
+		const recipe = RECIPE[vertical];
+		return {
+			slug: p.id.replace(/\.(md|mdx)$/, ''),
+			title: p.data.title,
+			vertical,
+			date: p.data.updatedDate ?? p.data.pubDate,
+			updated: !!p.data.updatedDate,
+			// Richness flags (the backfill scoreboard). "N/A" = the vertical doesn't carry it.
+			vehicle: recipe.vehicle ? (p.data.vehicle ? 'yes' : 'no') : 'na',
+			pms: recipe.howto ? (p.data.pms ? 'yes' : 'no') : 'na',
+			products: recipe.products ? (p.data.featuredProducts?.length ? 'yes' : 'no') : 'na',
+			photo: !p.data.heroImage ? 'no' : /placeholder/.test((p.data.heroImage as any).src ?? '') ? 'ph' : 'yes',
+			faq: p.data.faq?.length ?? 0,
+		};
+	})
+	.sort((a, b) => +b.date - +a.date);
+
+const fmt = (d: Date) => d.toLocaleDateString('en-us', { year: 'numeric', month: 'short', day: 'numeric' });
+
+// Backfill summary — how many car posts still lack Vehicle data.
+const carPosts = posts.filter((p) => p.vehicle !== 'na');
+const missingVehicle = carPosts.filter((p) => p.vehicle === 'no').length;
+const dailyPosts = posts.filter((p) => p.pms !== 'na');
+const missingPms = dailyPosts.filter((p) => p.pms === 'no').length;
+const placeholderPhotos = posts.filter((p) => p.photo !== 'yes').length;
+---
+
+<PageLayout title="All Posts" description="Every published Apex Engine post — edit any of them in place.">
+	<p class="lede">
+		Every published post. Click <strong>Edit</strong> to open it in the publish tool, change anything (content, specs,
+		prices, images), and re-publish — it overwrites the live post. The chips show which schema data each post still needs.
+	</p>
+
+	<div class="summary">
+		<span class="stat"><strong>{posts.length}</strong> posts</span>
+		<span class="stat"><strong>{missingVehicle}</strong> car posts missing Vehicle data</span>
+		<span class="stat"><strong>{missingPms}</strong> Daily-Driver posts missing PMS data</span>
+		<span class="stat"><strong>{placeholderPhotos}</strong> still on placeholder photos</span>
+	</div>
+
+	<div class="controls">
+		<input type="search" id="filter" placeholder="Filter by title, slug, or vertical…" autocomplete="off" />
+		<span class="muted" id="count"></span>
+	</div>
+
+	<div class="legend muted">
+		Chips: <span class="chip yes">Vehicle</span> present ·
+		<span class="chip no">PMS</span> missing ·
+		<span class="chip na">Products</span> not used by this vertical ·
+		<span class="chip ph">Photo</span> placeholder
+	</div>
+
+	<table class="posts">
+		<thead>
+			<tr><th>Title</th><th>Vertical</th><th>Date</th><th>Schema</th><th></th></tr>
+		</thead>
+		<tbody>
+			{posts.map((p) => (
+				<tr data-search={`${p.title} ${p.slug} ${p.vertical}`.toLowerCase()}>
+					<td class="t-title">
+						<a href={`/blog/${p.slug}/`} target="_blank" rel="noopener">{p.title}</a>
+						<span class="slug">/{p.slug}/</span>
+					</td>
+					<td><span class={`v-badge v-${p.vertical}`}>{p.vertical}</span></td>
+					<td class="t-date">{fmt(p.date)}{p.updated && <span class="upd">upd</span>}</td>
+					<td class="t-chips">
+						<span class={`chip ${p.vehicle}`}>Veh</span>
+						<span class={`chip ${p.pms}`}>PMS</span>
+						<span class={`chip ${p.products}`}>Prod</span>
+						<span class={`chip ${p.photo}`}>Photo</span>
+					</td>
+					<td class="t-edit"><a class="edit-btn" href={`/admin/publish/?edit=${p.slug}`}>Edit →</a></td>
+				</tr>
+			))}
+		</tbody>
+	</table>
+	<p class="empty muted" id="empty" hidden>No posts match that filter.</p>
+</PageLayout>
+
+<script>
+	const filter = document.getElementById('filter');
+	const rows = [...document.querySelectorAll('table.posts tbody tr')];
+	const count = document.getElementById('count');
+	const empty = document.getElementById('empty');
+	function apply() {
+		const q = filter.value.trim().toLowerCase();
+		let shown = 0;
+		for (const r of rows) {
+			const match = !q || r.dataset.search.includes(q);
+			r.hidden = !match;
+			if (match) shown++;
+		}
+		count.textContent = q ? `${shown} of ${rows.length}` : `${rows.length} posts`;
+		empty.hidden = shown !== 0;
+	}
+	filter.addEventListener('input', apply);
+	apply();
+</script>
+
+<style>
+	.lede { color: var(--metal-gray); max-width: 64ch; }
+	.summary { display: flex; flex-wrap: wrap; gap: 0.6em 1.5em; margin: 1.25em 0; padding: 0.9em 1.1em; background: var(--paper-off); border-left: 4px solid var(--red-mica); }
+	.summary .stat { font-size: 0.9rem; color: var(--metal-gray); }
+	.summary .stat strong { color: var(--text-color); font-size: 1.05rem; }
+	.controls { display: flex; align-items: center; gap: 1em; margin: 1.25em 0 0.5em; flex-wrap: wrap; }
+	#filter { flex: 1; min-width: 240px; max-width: 480px; padding: 0.6em 0.8em; border: 1px solid var(--metal-gray-light); background: var(--paper); font-family: inherit; color: var(--text-color); }
+	#filter:focus-visible { outline: 2px solid var(--accent-color); }
+	.muted { color: var(--metal-gray); font-size: 0.85rem; }
+	.legend { margin-bottom: 0.75em; display: flex; flex-wrap: wrap; gap: 0.3em 0.6em; align-items: center; }
+
+	table.posts { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+	table.posts th { text-align: left; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.04em; color: var(--metal-gray); border-bottom: 2px solid var(--line); padding: 0.5em 0.6em; }
+	table.posts td { border-bottom: 1px solid var(--line); padding: 0.55em 0.6em; vertical-align: middle; }
+	.t-title a { font-weight: 700; color: var(--text-color); text-decoration: none; }
+	.t-title a:hover { color: var(--red-mica); text-decoration: underline; }
+	.t-title .slug { display: block; font-family: ui-monospace, monospace; font-size: 0.72rem; color: var(--metal-gray); margin-top: 0.15em; }
+	.t-date { white-space: nowrap; color: var(--metal-gray); }
+	.t-date .upd { display: inline-block; margin-left: 0.4em; font-size: 0.6rem; text-transform: uppercase; font-weight: 700; color: var(--red-mica); border: 1px solid var(--red-mica); border-radius: 3px; padding: 0 0.25em; }
+	.v-badge { font-size: 0.66rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.03em; padding: 0.15em 0.5em; border-radius: 999px; border: 1px solid var(--line); color: var(--metal-gray); white-space: nowrap; }
+	.v-daily-driver { border-color: #2563eb; color: #2563eb; }
+	.v-ev { border-color: #16a34a; color: #16a34a; }
+	.v-jdm { border-color: #B91C1C; color: #B91C1C; }
+	.v-news { border-color: var(--metal-gray); color: var(--metal-gray); }
+
+	.t-chips { display: flex; gap: 0.3em; flex-wrap: wrap; }
+	.chip { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; padding: 0.12em 0.45em; border-radius: 4px; border: 1px solid transparent; }
+	.chip.yes { background: #dcfce7; color: #166534; }
+	.chip.no { background: #fef2f2; color: #B91C1C; border-color: #fecaca; }
+	.chip.na { background: transparent; color: var(--metal-gray-light); border-color: var(--line); }
+	.chip.ph { background: #fffbeb; color: #B45309; border-color: #fde68a; }
+	@media (prefers-color-scheme: dark) {
+		.chip.yes { background: rgba(22,101,52,0.25); color: #86efac; }
+		.chip.no { background: rgba(185,28,28,0.2); color: #fca5a5; border-color: transparent; }
+		.chip.ph { background: rgba(180,83,9,0.2); color: #fcd34d; border-color: transparent; }
+	}
+
+	.edit-btn { display: inline-block; padding: 0.35em 0.8em; background: var(--red-mica); color: #fff; text-decoration: none; font-weight: 700; font-size: 0.8rem; border-radius: 4px; white-space: nowrap; }
+	.edit-btn:hover { background: var(--red-mica-dark, #B91C1C); }
+	.empty { margin-top: 1.5em; }
+
+	@media (max-width: 720px) {
+		table.posts thead { display: none; }
+		table.posts tr { display: grid; grid-template-columns: 1fr auto; gap: 0.3em 0.8em; padding: 0.7em 0; border-bottom: 1px solid var(--line); }
+		table.posts td { border: none; padding: 0.1em 0; }
+		.t-title { grid-column: 1 / -1; }
+		.t-edit { grid-row: 1; grid-column: 2; }
+	}
+</style>
