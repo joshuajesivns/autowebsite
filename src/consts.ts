@@ -14,7 +14,7 @@ export const GOOGLE_SITE_VERIFICATION = 'HSbvWsGQs2LsqcS746ovWF7VAdN57syR2MZeKmg
 // Google AdSense publisher ID, e.g. "ca-pub-1234567890123456". Get it when you
 // create the AdSense account (assigned at signup, before approval). The ad loader
 // only renders once this is set — and also add the matching line to public/ads.txt.
-export const ADSENSE_CLIENT = '';
+export const ADSENSE_CLIENT = 'ca-pub-5056058699610793';
 
 // Official profiles — populate as you create them (used for Organization sameAs).
 export const SOCIAL_LINKS: string[] = [
