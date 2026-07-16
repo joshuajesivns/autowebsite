@@ -1,0 +1,9 @@
+# Apex Engine — ads.txt (Authorized Digital Sellers)
+# Served at https://www.apexenginehq.com/ads.txt
+#
+# TODO: after you create your Google AdSense account, replace pub-0000000000000000
+# below with YOUR real publisher ID (found in AdSense → Account → Settings, format
+# "pub-XXXXXXXXXXXXXXXX"), then uncomment the line and redeploy. AdSense will flag
+# "Earnings at risk — you need to fix ads.txt" until this real line is live.
+#
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0

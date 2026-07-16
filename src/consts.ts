@@ -11,6 +11,10 @@ export const SITE_URL = 'https://www.apexenginehq.com';
 // Paste your IDs here when you have them; each feature is skipped until set.
 export const GA_MEASUREMENT_ID = 'G-QE5FCP0VXP';   // Google Analytics 4
 export const GOOGLE_SITE_VERIFICATION = 'HSbvWsGQs2LsqcS746ovWF7VAdN57syR2MZeKmg6b5s';   // Search Console verification
+// Google AdSense publisher ID, e.g. "ca-pub-1234567890123456". Get it when you
+// create the AdSense account (assigned at signup, before approval). The ad loader
+// only renders once this is set — and also add the matching line to public/ads.txt.
+export const ADSENSE_CLIENT = '';
 
 // Official profiles — populate as you create them (used for Organization sameAs).
 export const SOCIAL_LINKS: string[] = [
