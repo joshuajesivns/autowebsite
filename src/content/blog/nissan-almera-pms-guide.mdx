@@ -1,10 +1,24 @@
 ---
 vertical: "daily-driver"
-title: "Real Nissan Almera Maintenance Cost Guide - Apex Engine"
-description: "What a Nissan Almera really costs to maintain in PH — the unusual 7,000 km interval, CVT truth, and known issues, covered by Apex Engine. Read the full guide."
+title: "Complete Nissan Almera PMS Schedule & Cost - Apex Engine"
+description: "Nissan Almera PMS schedule and cost in PH — the unusual 7,000 km interval, CVT fluid truth, timing chain, and 2026 prices, from Apex Engine. Read the guide."
 pubDate: "June 21, 2026"
-updatedDate: "June 28, 2026"
+updatedDate: "July 21, 2026"
 heroImage: "../../assets/blog-placeholder-1.jpg"
+vehicle:
+  name: "Nissan Almera (EL / VE / VL)"
+  brand: "Nissan"
+  model: "Almera N18"
+  vehicleModelDate: "2021/2026"
+  bodyType: "Sedan"
+  fuelType: "Gasoline"
+  transmission: "5-speed manual (EL) or Xtronic CVT (VE, VL)"
+  drivetrain: "FWD"
+  engines:
+    - name: "HRA0 / HR10DET 1.0L Turbo 3-cylinder"
+      engineType: "1.0L (999cc) DOHC 12-valve turbocharged gasoline"
+      power: "100"
+      powerUnit: "PS"
 tags: ["PMS", "Maintenance", "Nissan", "Nissan Almera"]
 faq:
   - q: "Gaano kadalas ang PMS ng Nissan Almera?"
@@ -19,6 +33,12 @@ faq:
     a: "Nissan's CVT has a rough reputation, but that mostly comes from the heavier-duty CVT8 in big US models like the Altima and Rogue. The Almera uses a lighter-duty CVT behind a low-torque engine and hasn't shown that failure pattern. Some pre-2024 units had a slightly jerky low-speed feel that newer ones smoothed out. Keep the CVT fluid fresh (Nissan NS-3) and don't let it overheat in heavy traffic, and it's dependable."
   - q: "Timing chain ba o belt ang Almera?"
     a: "Timing chain ang makina ng Almera (the HR engine family) — walang nakatakdang mahal na timing-belt replacement. Note: scary 'Almera timing-chain failure' stories online are about old 2000s-era Almeras, not this engine."
+  - q: "Magkano ang Nissan Almera ngayong 2026?"
+    a: "Base sa Nissan PH price guide (July 2026): 1.0 EL Turbo MT ~₱845,000, 1.0 VE Turbo CVT ~₱1,099,000, at 1.0 VL Turbo CVT ~₱1,199,000. Mas mataas nang ~₱50,000 ang Visayas/Mindanao pricing, at may +₱20,000 ang premium/pearl white paint. SRP ito — kumpirmahin pa rin sa dealer dahil nagbabago."
+  - q: "Kailangan bang palitan ang CVT fluid ng Almera?"
+    a: "Oo, para sa VE at VL (CVT variants) — Nissan NS-3 fluid lang, hindi generic ATF. Hindi naglalabas ang Nissan PH ng fixed km interval para dito; kadalasan ginagawa ito sa isang major-service stop (mga 40,000–60,000 km, mas maaga kung palaging traffic) — owner/casa practice ito, kumpirmahin sa dealer. Ang base EL ay manual, kaya walang CVT fluid na aalagaan doon."
+  - q: "Ilang airbag ang Nissan Almera?"
+    a: "Anim (6) na airbag sa lahat ng tatlong variant — EL, VE, at VL — sa kasalukuyang 2024-facelift na modelo (dati, dalawa lang sa base). Standard din ang VDC stability control, ABS+EBD, at ISOFIX; 4-star ASEAN NCAP ang rating nito."
 ---
 
 import { Figure } from '../../components/editorial';
@@ -33,25 +53,30 @@ The **Nissan Almera** is the value play in the subcompact sedan class — roomy,
 - **Turbo discipline (1.0L):** use the correct-spec oil and never stretch the interval — small turbos are less forgiving of dirty oil.
 - **The CVT is fine** — it's a lighter-duty unit, not the failure-prone CVT8 from big US Nissans. Keep the fluid fresh.
 - **Know your generation:** current N18 (2021+) = 1.0L turbo + CVT/manual; old N17 (~2012–2021) = 1.5L naturally-aspirated + 4-speed auto.
+- **The car on sale now is the 2024 facelift** — the N-Sport trim was dropped, VL is the top variant, and **6 airbags are now standard on all three variants** (EL, VE, VL).
 - **Timing chain, not belt** = walang mahal na belt replacement later.
+- **Current 2026 SRP:** EL (MT) ~₱845,000, VE (CVT) ~₱1,099,000, VL (CVT) ~₱1,199,000. *(Nissan PH price guide, July 2026 — confirm with your dealer.)*
 
 <Figure src={img1} width="full" caption="The Almera: roomy, value-priced, and turbocharged in its latest form — keep the oil clean and it's an easy car to live with." credit="Apex Engine" />
 {/* TODO: replace placeholder with a real Almera photo in src/assets/blog/ */}
 
 ## Which Model Year Does This Guide Cover? (October 2021–2026)
 
-This guide covers the current **N18-generation Almera**, launched in the Philippines in October 2021 — the 1.0L HR10DET turbo with a 5-speed manual or Xtronic CVT. The older **N17 generation (~2012–2021, locally assembled in Sta. Rosa)** is a different car under the skin: a 1.5L HR15DE naturally-aspirated engine with a 4-speed automatic, no turbo and no CVT. Its PMS schedule, oil spec, and known issues aren't the same as what's covered here.
+This guide covers the current **N18-generation Almera**, launched in the Philippines in October 2021 — the 1.0L turbo with a 5-speed manual or Xtronic CVT. Importantly, the car on sale today is the **2024 facelift**: it kept the same HRA0/HR10DET turbo engine and 7,000 km schedule, but the lineup was reshuffled (the sportier **N-Sport** trim was dropped, **VL** became the top variant), NissanConnect Services was added on the CVT trims, and — a real upgrade — **6 airbags became standard across all three variants (EL, VE, VL)**, where the pre-facelift base only had two. Nothing in the maintenance picture changed with the facelift, so everything below applies to both the 2021–2023 pre-facelift and 2024–2026 facelift cars.
+
+The older **N17 generation (~2012–2021, locally assembled in Sta. Rosa until CKD production wound down in 2020)** is a different car under the skin: a 1.5L HR15DE naturally-aspirated engine with a 4-speed automatic, no turbo and no CVT. Its PMS schedule, oil spec, and known issues aren't the same as what's covered here.
 
 ## Nissan Almera Quick Specs
 
 | Spec | Detail |
 |---|---|
-| Engine | 1.0L (999cc) HR10DET turbo 3-cylinder, DOHC |
-| Power | 100 PS @ 5,000 rpm / 152 Nm @ 2,400–4,000 rpm |
-| Oil capacity | ~3.6–3.7 liters (with filter), 5W-30 |
+| Engine | 1.0L (999cc) turbo 3-cylinder, DOHC (Nissan PH code **HRA0**, aka HR10DET) |
+| Power | 100 PS @ 5,000 rpm / **160 Nm on the 5MT, 152 Nm on the CVT** @ 2,400–4,000 rpm |
+| Oil capacity | ~3.6–3.7 liters (with filter), 5W-30 *(approx. — not on Nissan PH's brochure)* |
 | Transmission | 5-speed manual (EL) or Xtronic CVT (VE, VL) |
 | Timing | Chain (no scheduled belt change) |
 | PMS interval | Every 7,000 km or 6 months |
+| Safety | 6 airbags, VDC stability control, ABS+EBD, ISOFIX (all variants); 4-star ASEAN NCAP |
 
 *Figures for the current N18 (2021–present) PH Almera. The older N17 (~2012–2021, locally assembled in Sta. Rosa) used a 1.5L HR15DE naturally-aspirated engine with a 4-speed automatic or 5-speed manual.*
 
@@ -60,6 +85,23 @@ This guide covers the current **N18-generation Almera**, launched in the Philipp
 This is the one thing to get right. Most cars in the Philippines are serviced every 5,000 km (Toyota, Mitsubishi) or 10,000 km. The Almera is **neither** — Nissan Philippines' own maintenance page lists the general Nissan interval as 10,000 km **with a specific footnote of 7,000 km for the Almera**.
 
 In practice that means your service stops fall at **1,000 km** (break-in), then every **7,000 km** — 7k, 14k, 21k, 28k, and so on. Don't book it on the 5,000 km habit (you'll over-service and overspend) or stretch it to 10,000 km (you'll under-service the turbo). Set your reminder to 7,000 km or 6 months, whichever comes first.
+
+## Nissan Almera Maintenance Schedule (PMS Interval Chart)
+
+Because the Almera counts in **7,000 km steps**, its service stops don't line up with the usual "40k/80k" milestones you'll see on a Toyota or Mitsubishi. Here's the rhythm — oil and filter plus a general check at every stop, with the bigger-ticket items (filters, brake fluid, spark plugs, CVT fluid) coming due around the higher-mileage visits:
+
+| Odometer (km) | PMS type | Key items done |
+|---|---|---|
+| 1,000 | First check | First inspection, oil level + bolt-torque check, no major parts *(usually free labor)* |
+| 7,000 | Light | Engine oil + oil filter, general inspection |
+| 14,000 | Light | Oil + filter, tire rotation, brake inspection |
+| 21,000 | Light | Oil + filter, air-cleaner element check, general inspection |
+| 28,000 | Light (+) | Oil + filter; air + fuel filters and brake fluid typically due around here |
+| 35,000 | Light | Oil + filter, brake + suspension inspection |
+| **42,000** | **Heavy / major** | Oil + filter, **spark plugs, brake fluid, air + fuel filters**, CVT fluid (NS-3) check |
+| 49,000+ | Light | Oil + filter each 7k / 6-mo stop, rotating inspections; next major around 84,000 km |
+
+*Whichever comes first — km or months. Nissan PH doesn't publish the exact per-interval menu for the Almera, so the "key items" above follow standard PMS practice — confirm your car's exact schedule with your Nissan dealer. For heavy PH use (daily traffic, heat, short trips), treat the schedule as severe and never stretch the oil interval on the turbo.*
 
 ## Nissan Almera PMS Cost by Interval
 
@@ -73,7 +115,15 @@ A transparency note: unlike Toyota, **Nissan PH doesn't publish an easily-quotab
 
 ## Light PMS vs. Heavy PMS on the Almera
 
-Most visits are **light PMS** — engine oil + filter, tire rotation, and a general check, every 7,000 km. The **heavy (major) PMS** is when the casa also replaces the occasional-wear items: air and fuel filters, brake fluid, the **CVT fluid (Nissan NS-3)**, and spark plugs. Because the Almera counts in 7,000 km steps, these bigger services don't land on the usual "40k/80k" marks — they come due around the higher-mileage stops, so confirm the exact schedule with your dealer rather than assuming the standard milestones.
+Most visits are **light PMS** — engine oil + filter, tire rotation, and a general check, every 7,000 km. On the 1.0L turbo this is the single most important habit for longevity: correct-spec oil, changed on schedule. The **heavy (major) PMS** is when the casa also replaces the occasional-wear items: air and fuel filters, brake fluid, the **CVT fluid (Nissan NS-3)**, and spark plugs. Because the Almera counts in 7,000 km steps, these bigger services don't land on the usual "40k/80k" marks — they come due around the higher-mileage stops, so confirm the exact schedule with your dealer rather than assuming the standard milestones.
+
+## Nissan Almera: Timing Belt or Chain?
+
+**Chain.** The Almera's 1.0L turbo (the HR engine family) uses a **timing chain**, not a rubber timing belt. That's good news for running costs: there's **no scheduled timing-belt replacement** — the ₱15,000–30,000+ job that belt-driven cars need around 100,000 km simply doesn't exist here. A chain is designed to last the engine's life *as long as the oil stays clean*, which is one more reason oil discipline matters on the turbo — the chain and the turbo both rely on it. And to be clear: the scary "Almera timing-chain failure" stories you'll find online are about **2000s-era N16 Almeras with a completely different engine** — not this one.
+
+## Nissan Almera CVT Fluid Change Interval
+
+The VE and VL use Nissan's **Xtronic CVT**, which takes a specific fluid — **Nissan NS-3**, never generic ATF (wrong fluid is an immediate damage risk, so this one belongs at the casa). Here's the honest part: **Nissan PH doesn't publish a fixed km interval for the Almera's CVT fluid.** In practice it's inspected and replaced around a major-service stop (roughly every 40,000–60,000 km, sooner if you're always in severe heavy-traffic driving), but treat that as owner/casa practice, not an official figure — confirm the exact interval for your car with your dealer. The base **EL is a 5-speed manual**, so it has no CVT fluid to worry about (just regular manual-transmission oil).
 
 ## Known Issues on the Nissan Almera
 
@@ -92,8 +142,10 @@ Good news on the safety front: there is **no Philippine recall on record for the
 
 **Under warranty → Nissan casa** (keep your receipts). **Out of warranty → a trusted talyer** is usually cheaper — but for the turbo, make sure the shop uses the correct oil spec, and for the CVT, the correct NS-3 fluid. One honest note: Nissan's dealer network and parts availability aren't quite as dense as Toyota's, so plan a little ahead for parts on the turbo model. Between visits you can DIY the basics — tire pressure, washer fluid, cabin filter, oil-level check — and leave CVT fluid, turbo work, and warranty service to the pros.
 
+If the unpredictable PMS bill bothers you, Nissan PH offers a prepaid, fixed-price **Service Protection Plan** — you lock in labor and parts pricing for a set number of years/services upfront. It's worth asking your dealer to quote it against pay-as-you-go: it removes the "magkano kaya this time?" guesswork that comes from Nissan not publishing an Almera price list, though whether it saves money depends on your mileage.
+
 ## Verdict: Great Value If You Respect the Schedule
 
-The Almera gives you more space and a peppier turbo for the money than most rivals, with affordable routine PMS and a timing chain (no belt drama). It's **still sold new in 2026** (1.0 EL manual, VE and VL CVT). The deal: book it on its real **7,000 km** interval, treat oil and CVT-fluid changes as non-negotiable, and keep your records clean — do that and it's an easy, dependable car to live with.
+The Almera gives you more space and a peppier turbo for the money than most rivals, with affordable routine PMS and a timing chain (no belt drama). It's **still sold new in 2026** — the 2024-facelift lineup is the EL (MT, ~₱845,000), VE (CVT, ~₱1,099,000), and VL (CVT, ~₱1,199,000), now with 6 airbags standard across the board *(Nissan PH SRP, July 2026 — verify with your dealer)*. The deal: book it on its real **7,000 km** interval, treat oil and CVT-fluid changes as non-negotiable, and keep your records clean — do that and it's an easy, dependable car to live with.
 
 Comparing subcompact sedans? See the [Toyota Vios](/models/toyota-vios) and the [Mitsubishi Mirage G4](/models/mitsubishi-mirage-g4) in our model catalog.
