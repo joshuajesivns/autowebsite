@@ -145,3 +145,29 @@ const siteSchema = {
 		}
 	`} />
 )}
+
+<!-- Open every link in a new tab. BaseHead is in every public page's <head>,
+     so this one script covers the whole site — nav, footer, blog-post body
+     links, cards, and any page/link added later. Two deliberate exceptions:
+       • same-page anchor jumps (href="#section") — opening those in a blank
+         tab wouldn't even scroll; it'd just spawn an empty duplicate.
+       • mailto:/tel:/javascript: links — these fire an app, not a web page.
+     Existing rel tokens (e.g. an affiliate link's "sponsored nofollow") are
+     preserved; "noopener noreferrer" is added for security (stops the newly
+     opened tab from being able to script this one). -->
+<script is:inline>
+	document.addEventListener('DOMContentLoaded', function () {
+		var links = document.querySelectorAll('a[href]');
+		for (var i = 0; i < links.length; i++) {
+			var a = links[i];
+			var href = a.getAttribute('href') || '';
+			if (href.charAt(0) === '#') continue;
+			if (/^(mailto:|tel:|javascript:)/i.test(href)) continue;
+			a.setAttribute('target', '_blank');
+			var rel = (a.getAttribute('rel') || '').split(/\s+/).filter(Boolean);
+			if (rel.indexOf('noopener') === -1) rel.push('noopener');
+			if (rel.indexOf('noreferrer') === -1) rel.push('noreferrer');
+			a.setAttribute('rel', rel.join(' '));
+		}
+	});
+</script>
