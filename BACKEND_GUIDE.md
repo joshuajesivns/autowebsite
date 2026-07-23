@@ -31,6 +31,24 @@ The Admin panel just makes that commit *for you* from the browser.
 
 ---
 
+## What's in this guide
+
+Parts **A–E** are the practical, day-to-day stuff — most days you never need more than these.
+Parts **F–I** are the "under the hood" reference: how the machinery actually works, for when
+you (or a developer) need to change or debug it rather than just use it.
+
+- **A — The browser Admin panel** (`/admin`) — publish, edit, moderate from any browser.
+- **B — Managing it from the code** (this repo) — files, `consts.ts`, how a code change goes live.
+- **C — Site-wide behavior: links open in a new tab** — where that's set and how to change it.
+- **D — Secrets & environment variables** — what each one unlocks, where they live.
+- **E — Quick troubleshooting** — the usual "why didn't it work" answers.
+- **F — Under the hood: how publishing actually works** — the Scan → Publish pipeline, atomic commits.
+- **G — The structured-data (JSON-LD) engine** — how a post's schema is built from its `vertical`.
+- **H — Owner-submitted PMS costs** — the `/contribute` → Moderation → Supabase flow (the one database).
+- **I — Helper scripts & offline tools** — `npm run generate` and the SEO opportunity report.
+
+---
+
 ## PART A — The browser Admin panel
 
 ### A1. Logging in
@@ -159,7 +177,7 @@ git push origin main     # → Vercel auto-deploys to production
 
 ---
 
-## PART C — The change we just made: "all links open in a new tab"
+## PART C — Site-wide behavior: links open in a new tab
 
 **What:** every link on the public site now opens in a new browser tab.
 
@@ -226,4 +244,244 @@ After changing any variable in Vercel, **redeploy** (Deployments → ⋯ → Red
 
 ---
 
-*Last updated: 2026-07-22.*
+## PART F — Under the hood: how publishing actually works
+
+*You don't need this to publish — Part A covers that. This is for understanding or changing the
+machinery behind the `/admin/publish` button.*
+
+The publish tool is deliberately split so the tricky logic is testable and the network code is
+tiny. Four files do the work:
+
+| File | Job |
+|------|-----|
+| `src/pages/admin/publish.astro` | The browser page (the form + preview UI you interact with). |
+| `src/pages/api/admin/publish.ts` | The server endpoint. Handles four actions (below). Guards every call behind your admin session. |
+| `src/lib/publish.ts` | **Pure logic** — parse frontmatter, validate, slugify, detect image slots, the SEO analysis, and read/write the structured schema blocks. No network calls, so it's easy to reason about. |
+| `src/lib/github.ts` | **The only network code** — commits files to GitHub via its API. |
+
+### F1. The four actions
+
+Everything the page does is one of four POSTs to `/api/admin/publish`:
+
+- **`scan`** — takes your pasted MDX and returns everything the review screen shows: validation
+  errors, the parsed title/description/vertical, the derived slug (and whether it's already taken),
+  the list of image slots, a Google-snippet preview, and the full **SEO analysis** (see F3). No
+  GitHub token needed — it reads existing posts straight from the content collection.
+- **`load`** — fetches an existing post's raw MDX from GitHub so you can **edit it in place**
+  (this is what the "Edit →" button on `/admin/posts` triggers).
+- **`upload-blob`** — takes one already-downscaled image, uploads it to GitHub as a git *blob*,
+  and hands back the blob's SHA. The browser resizes each photo to ≤2000px WebP *before* this, so
+  uploads stay small; the server still enforces an 8 MB hard cap as a backstop.
+- **`publish`** — the commit. See F2.
+
+### F2. A publish is one atomic commit
+
+`publish` never touches files one at a time. It:
+
+1. Rewrites the MDX so any uploaded image points at the post's own folder
+   (`src/assets/blog/<slug>/hero.webp`, etc.); slots you left empty keep their placeholder.
+2. Bakes in the alt text you typed (hero alt → frontmatter, body alts → each `<Figure>`/`<Split>` tag).
+3. Merges the structured schema blocks (`vehicle` / `pms` / `featuredProducts`) from the form into
+   the frontmatter.
+4. Bundles the `.mdx` file **and** every uploaded image into **one commit** via GitHub's Git Data
+   API (blobs → tree → commit → move branch). Either the whole post lands or nothing does — you can
+   never end up with an article live but its images missing.
+
+Two safety rails, both in `publish.ts`/`publish.ts` API:
+- **Create mode refuses to overwrite** an existing slug (returns a 409). **Edit mode requires** the
+  slug to already exist. So a new post can't silently clobber an old one, and an "edit" can't
+  accidentally create a stray file.
+- The commit targets `GH_BRANCH`, which is `main` unless you set `PUBLISH_BRANCH` to a throwaway
+  branch (see `PUBLISH_TOOL_SETUP.md` → "safe first test"). Only `main` auto-deploys.
+
+### F3. The Scan screen's "SEO analysis" is advisory only
+
+Everything on the traffic-light panel (`analyzePost` in `src/lib/publish.ts`) is **advice, not a
+gate** — it can warn all it likes and you can still publish. Only `validatePost` blocks a publish,
+and it only blocks on things that would actually break the build: a missing frontmatter block, or a
+missing/invalid `vertical`, `title`, `description`, or `pubDate`.
+
+What the advisory panel checks, all mirroring `CONTENT_STYLE_GUIDE.md`:
+- **Title/description character counts** against the meta formula (title 55–58, description
+  155–158, "Apex Engine" exactly once).
+- **Required sections per vertical** — e.g. Daily Driver wants Quick Specs, Light-vs-Heavy PMS,
+  Known Issues; JDM wants upgrade paths, parts sourcing, buying guide, etc. Matched loosely against
+  your H2/H3 headings.
+- **Images** — hero present? alt text on every image? still on a placeholder?
+- **Schema preview** — which JSON-LD nodes this post *will* emit (see Part G).
+- **Internal links** — counts them, **flags any `/blog/` or `/models/` link whose target doesn't
+  exist** (the recurring "bottom links must point to real slugs or they 404" problem, now caught
+  automatically), nudges you when the same anchor text is reused verbatim, and suggests related
+  posts you could link based on shared vertical/brand/tags.
+
+Because it reads the real post + model slug lists and the real `RECIPE` from `schema.ts`, its
+"broken link" and "which schema will emit" answers are accurate, not guesses.
+
+---
+
+## PART G — The structured-data (JSON-LD) engine
+
+*This is what makes posts eligible for rich results and AI Overviews. The whole system lives in
+one file — `src/lib/schema.ts` — plus the frontmatter shapes in `src/content.config.ts`.*
+
+### G1. One graph per post
+
+Every blog page renders a single JSON-LD `@graph`: an **Article**, and — depending on the post —
+the **Vehicle** it's about, the **HowTo** procedures (Light + Heavy PMS) it explains, the
+**Questions** it answers (FAQ), and the **Products** it recommends. The site-wide **Organization**
+and **WebSite** are declared once in `BaseHead.astro`; everything in `schema.ts` references them by
+`@id` instead of re-declaring them, so Google reads the whole thing as one connected entity.
+
+### G2. The RECIPE table decides what each vertical may emit
+
+```
+                vehicle   howto(PMS)   products
+daily-driver      ✓          ✓            ✓
+ev                ✓          ✗            ✓
+jdm               ✓          ✗            ✓
+news              ✗          ✗            ✗
+```
+
+Two independent conditions must both be true for an entity to appear:
+1. **The vertical allows it** (the table above), **and**
+2. **the data is actually present** in the frontmatter.
+
+So a `news` post never emits a Vehicle even if you added vehicle data, and a `daily-driver` post
+with no `pms:` block simply emits no HowTo. The markup can never describe something the vertical
+shouldn't carry, and never describes data that isn't there. **To change what a vertical emits, you
+edit the `RECIPE` table and (if adding a new entity type) add a small builder function — nothing
+else in the site changes.**
+
+### G3. The frontmatter that feeds it (`src/content.config.ts`)
+
+The content collection schema is the contract — a post that violates it **fails the build**, so a
+mistake is caught before it can deploy. The fields that matter for schema:
+
+- **`vertical`** *(required)* — `daily-driver | ev | jdm | news`. This one field selects the whole
+  entity mix. Forgetting it fails the build on purpose.
+- **`vehicle`** *(optional block)* — `name`, `brand`, `model`, plus optional `bodyType`,
+  `fuelType`, `transmission`, `drivetrain` (FWD/RWD/AWD/4WD), and an `engines:` list. Feeds the
+  **Vehicle** node (and the Quick Specs table).
+- **`pms`** *(optional, Daily Driver only)* — `currency` + `light`/`heavy` services, each with
+  `interval`, numeric `costMin`/`costMax`, and optional `steps`. Costs are **numbers, not `"1,500"`
+  strings**, so the `MonetaryAmount` stays clean; the peso formatting happens in the visible prose,
+  not here. Feeds the **HowTo** nodes.
+- **`faq`** *(optional)* — `q`/`a` pairs → a visible FAQ section **and** the **FAQPage** schema.
+- **`featuredProducts`** *(optional)* — affiliate picks. Renders the visible "Recommended parts"
+  section **and** the `ItemList`/`Product` schema from the *same* data (so markup can't describe a
+  product a reader can't see — the mismatch Google penalizes). **No `price` field on purpose** —
+  affiliate prices go stale and become a liability; only the affiliate `url` is carried.
+
+> Most existing posts leave `pms` and `featuredProducts` empty — those nodes are **dormant until
+> populated** (via the publish tool's structured-fields form). A post with only base frontmatter is
+> perfectly valid; it just emits a leaner graph.
+
+---
+
+## PART H — Owner-submitted PMS costs: `/contribute` → Moderation → Supabase
+
+*This is the **only** part of Apex Engine backed by a live database. Everything else is static
+files. It exists to collect real-world PMS prices from owners to replace the "average casa price,
+verify with dealer" estimates in the guides — and, later, to feed an ownership-cost calculator.*
+
+### H1. The flow, end to end
+
+```
+Public /contribute form
+   │  (fetch POST, JSON)
+   ▼
+/api/pms-report        ← validates every field, drops bot submissions, writes the row
+   │
+   ▼
+Supabase table `pms_reports`   status = 'pending'
+   │
+   ▼
+/admin/moderation      ← you review each pending row (behind admin login)
+   │  Approve / Reject  → POST /api/admin/moderate
+   ▼
+row status = 'approved' | 'rejected'
+```
+
+### H2. The pieces
+
+- **`src/pages/contribute.astro`** — the public form (make, model, year, service type, mileage,
+  amount paid, casa vs independent, optional region/date/notes). Submits via `fetch` to the API and
+  swaps in a "thanks, it's in the queue" message. Includes a **honeypot**: a hidden `website` field
+  real users never see; a bot that autofills it gets a fake success and is silently dropped.
+- **`src/pages/api/pms-report.ts`** — the write endpoint. Re-validates *everything* server-side
+  (year 1990–2100, service type in {light, major, other}, positive amount, casa/independent, etc.)
+  and inserts the row using the **public** Supabase key.
+- **`src/lib/supabase.ts`** — two clients: `getPublicSupabase()` (the publishable key, safe, used by
+  the write endpoint) and `getAdminSupabase()` (the **secret** key that bypasses row-level security,
+  server-only, used by moderation).
+- **`src/pages/admin/moderation.astro`** — lists `status = 'pending'` rows oldest-first, with
+  Approve/Reject buttons.
+- **`src/pages/api/admin/moderate.ts`** — flips a row to `approved`/`rejected`. Guarded by the admin
+  session cookie.
+- **`supabase/schema.sql`** — the table definition. Run it once (below).
+
+### H3. Why it's safe (the security model)
+
+Row-level security is on, and the two keys have very different power:
+- The **public key** can only **insert**, and the policy **forces every new row to `status =
+  'pending'`** no matter what the client sends. There is **no public SELECT policy**, so the public
+  key can never *read back* submissions — approved or not — through the site.
+- The **secret key** (moderation only) bypasses RLS entirely. It must stay server-side; it's never
+  imported into any client script and never sent to the browser.
+
+### H4. One-time database setup
+
+If you're wiring this up on a fresh Supabase project:
+1. Create a project at supabase.com. From **Project Settings → API**, copy the **Project URL**, the
+   **publishable/anon key**, and the **service_role/secret key**.
+2. Put them in Vercel (and local `.env`) as `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+   `SUPABASE_SECRET_KEY`. Redeploy.
+3. Open **Supabase → SQL Editor → New query**, paste the contents of `supabase/schema.sql`, run it
+   once. That creates the `pms_reports` table, its indexes, and the insert-only RLS policy.
+
+### H5. Current status
+
+The data is collected and moderated but **not yet displayed anywhere public** — approved rows sit
+in the table waiting for the ownership-cost calculator that will consume them. So "approve" today
+just means "this looks plausible, keep it"; nothing goes live on the site as a result yet. My notes
+flag this whole flow as **not yet exercised end-to-end** — if you're relying on it, do a real
+test submission → moderate it → confirm the status flip before trusting it in production.
+
+---
+
+## PART I — Helper scripts & offline tools (not part of the live site)
+
+These run on your PC, never on Vercel. They're optional utilities, not part of what visitors touch.
+
+### I1. `npm run generate` — AI draft generator (`scripts/generate-blog.js`)
+
+An interactive command-line tool that asks for a mode (Technical Review / Culture Story / How-To /
+Market Insight), a topic, and your "human insights," then calls OpenAI (`gpt-4o`) to write a full
+MDX draft into `src/content/blog/`. Needs `OPENAI_API_KEY` in `.env`.
+
+> This is an **older/fallback authoring path**. The current workflow is: draft in any AI chat →
+> paste into `/admin/publish` (which adds schema, images, alt text, and the SEO checks this script
+> doesn't). Treat `npm run generate` as a quick-draft convenience, not the main pipeline — anything
+> it produces still wants a pass through the publish tool.
+
+### I2. The SEO opportunity report (`tools/seo-report/`)
+
+A **self-contained** Node tool (its own `package.json`, its own `node_modules`) that pulls Google
+Search Console + GA4 + PageSpeed data, joins them by URL, and produces a ranked "what to optimize
+next" HTML report — this is exactly what surfaced the "heavy pms" pages that were getting
+impressions but zero clicks. It has its own **`tools/seo-report/README.md`** with full setup
+(Google Cloud project, service account, granting it Viewer access to GA4 + Search Console). In
+short:
+
+```bash
+cd tools/seo-report
+npm install
+npm run report      # → output/report-<date>.html
+```
+
+Its secrets (`service-account.json`, `config.json`, `output/`) are git-ignored and live only on
+your PC — never committed. Run it roughly weekly so it can show position trends over time.
+
+---
+
+*Last updated: 2026-07-23.*
