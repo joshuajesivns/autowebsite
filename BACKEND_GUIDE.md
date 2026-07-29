@@ -29,7 +29,7 @@ You control all of this in **three ways**, easiest first:
 |-----|-----------|---------------|
 | **The Admin panel** (a website page: `/admin`) | Publishing and editing posts, approving reader submissions. This is 90% of what you'll do. | A web browser + your admin password. |
 | **Asking Claude Code** (me) | Anything else — design tweaks, new features, fixing something odd, adding a page. | Open Claude Code in this folder and describe what you want in plain English. |
-| **Editing the files by hand** | You almost certainly won't. | (Skip it — that's what asking me is for.) |
+| **Editing the files by hand** | Optional. Useful if you *want* to understand your own site. | See **`ASTRO_GUIDE.md`** — a plain-English map of the code: which file controls what, and how to look around safely. |
 
 ---
 
@@ -197,6 +197,10 @@ of this feels fiddly, just tell me which one and why — I'll guide you click by
 
 *Everything below is for a developer, or for me (Claude) to reference. You do not need to read it to
 run the site. It's here so the knowledge isn't lost, not because you're expected to use it.*
+
+> **Want to actually understand this layer rather than skip it?** Read **`ASTRO_GUIDE.md`** instead —
+> it's this same material taught as navigation ("I want to change X → open this file"), written for
+> someone with no coding background, with a 20-minute guided tour of your own folder.
 
 ### 8.1 The manual code path (if you ever want it)
 
