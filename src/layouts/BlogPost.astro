@@ -55,7 +55,10 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
                 <header class="blog-hero">
                     {heroImage && (
                         <div class="hero-bg-container">
-                            <Image width={1920} height={1080} src={heroImage} alt={heroAlt ?? ""} class="hero-bg-img" />
+                            {/* The hero IS the LCP element — it must not be lazy-loaded.
+                                Astro's <Image> defaults to loading="lazy", which delays the
+                                fetch until after layout and was costing ~6s LCP sitewide. */}
+                            <Image width={1920} height={1080} src={heroImage} alt={heroAlt ?? ""} class="hero-bg-img" loading="eager" fetchpriority="high" decoding="sync" />
                             <div class="hero-overlay"></div>
                         </div>
                     )}
