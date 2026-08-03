@@ -1,0 +1,355 @@
+---
+/* PmsReport — the inline "what did YOU pay?" widget.
+ *
+ * Drop this into a PMS guide right after the cost table:
+ *   <PmsReport make="Toyota" model="Vios" />
+ *
+ * Design rules it exists to enforce:
+ *  1. Ask at the point of relevance, not on a page nobody visits.
+ *  2. Three visible inputs. Make/model come from props, so the reader never
+ *     re-types what the page already knows. Everything else is progressive
+ *     disclosure behind "Add more detail".
+ *  3. Give data back. The readback line is the incentive, the social proof,
+ *     and the actual content asset all at once.
+ *  4. Never publish a number from a sample too small to mean anything —
+ *     /api/pms-stats enforces that server-side.
+ */
+interface Props {
+	/** Omit both on non-model pages (e.g. the pillar) to show car inputs instead. */
+	make?: string;
+	model?: string;
+	/** Display name if the model needs disambiguating, e.g. "Hiace (2.8 H300)". */
+	label?: string;
+}
+
+const { make = '', model = '', label } = Astro.props;
+const known = Boolean(make && model);
+const carName = label ?? (known ? `${make} ${model}` : 'sasakyan');
+const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<section class="pms-report" data-make={make} data-model={model} data-uid={uid}>
+	<div class="pms-head">
+		<h3>Magkano ang binayaran mo?</h3>
+		<p class="pms-sub">
+			Walang opisyal na price list ang karamihan ng brands sa Pilipinas — kaya estimates
+			ang halos lahat ng nababasa mo, kasama na ang sa amin. Kung nagpa-PMS ka na sa
+			<strong>{carName}</strong> mo, i-share mo ang totoong presyo. Anonymous ito, 10 seconds lang.
+		</p>
+	</div>
+	</div>
+
+	<p class="pms-stats" data-role="stats" hidden></p>
+
+	<form class="pms-form" data-role="form" novalidate>
+		{/* Honeypot — hidden from humans, catnip for bots. */}
+		<div class="pms-hp" aria-hidden="true">
+			<label for={`${uid}-website`}>Leave this blank</label>
+			<input type="text" id={`${uid}-website`} name="website" tabindex="-1" autocomplete="off" />
+		</div>
+
+		{!known && (
+			<div class="pms-row pms-row-car">
+				<div class="pms-field">
+					<label for={`${uid}-make`}>Make</label>
+					<input type="text" id={`${uid}-make`} name="make" placeholder="Toyota" required />
+				</div>
+				<div class="pms-field">
+					<label for={`${uid}-model`}>Model</label>
+					<input type="text" id={`${uid}-model`} name="model" placeholder="Vios" required />
+				</div>
+			</div>
+		)}
+
+		<div class="pms-row">
+			<div class="pms-field">
+				<label for={`${uid}-type`}>Anong service?</label>
+				<select id={`${uid}-type`} name="serviceType" required>
+					<option value="light">Light / regular PMS</option>
+					<option value="major">Major / heavy PMS</option>
+					<option value="other">Iba (repair, etc.)</option>
+				</select>
+			</div>
+
+			<div class="pms-field">
+				<label for={`${uid}-amount`}>Magkano lahat? (₱)</label>
+				<input
+					type="number"
+					id={`${uid}-amount`}
+					name="amountPhp"
+					inputmode="numeric"
+					min="100"
+					max="500000"
+					placeholder="4500"
+					required
+				/>
+			</div>
+
+			<div class="pms-field">
+				<label for={`${uid}-where`}>Saan?</label>
+				<select id={`${uid}-where`} name="serviceLocation" required>
+					<option value="casa">Casa / dealer</option>
+					<option value="independent">Talyer / independent</option>
+				</select>
+			</div>
+		</div>
+
+		<details class="pms-more">
+			<summary>Add more detail (optional)</summary>
+			<div class="pms-row pms-row-more">
+				<div class="pms-field">
+					<label for={`${uid}-year`}>Model year</label>
+					<input type="number" id={`${uid}-year`} name="modelYear" min="1990" max="2100" placeholder="2022" />
+				</div>
+				<div class="pms-field">
+					<label for={`${uid}-km`}>Mileage (km)</label>
+					<input type="number" id={`${uid}-km`} name="mileageKm" min="0" placeholder="40000" />
+				</div>
+				<div class="pms-field">
+					<label for={`${uid}-region`}>City / region</label>
+					<input type="text" id={`${uid}-region`} name="region" placeholder="Sta. Rosa, Laguna" />
+				</div>
+			</div>
+			<div class="pms-field">
+				<label for={`${uid}-notes`}>Anything else? (what was included, etc.)</label>
+				<textarea id={`${uid}-notes`} name="notes" rows="2" maxlength="1000"></textarea>
+			</div>
+		</details>
+
+		<div class="pms-actions">
+			<button type="submit" class="pms-submit">I-share ang presyo</button>
+			<span class="pms-msg" data-role="msg" role="status" aria-live="polite"></span>
+		</div>
+
+		<p class="pms-fine">
+			Walang pangalan, walang email, walang login. Ang mga ulat ay dumadaan sa moderation
+			bago ipakita, at ipinapakita lang bilang <em>owner-reported</em> — hindi bilang opisyal na presyo.
+		</p>
+	</form>
+</section>
+
+<script>
+	// One handler covers every instance on the page.
+	document.querySelectorAll('.pms-report').forEach((root) => {
+		const el = root as HTMLElement;
+		const make = el.dataset.make ?? '';
+		const model = el.dataset.model ?? '';
+		const form = el.querySelector('[data-role="form"]') as HTMLFormElement | null;
+		const msg = el.querySelector('[data-role="msg"]') as HTMLElement | null;
+		const stats = el.querySelector('[data-role="stats"]') as HTMLElement | null;
+		if (!form || !msg || !stats) return;
+
+		const peso = (n: number) => '₱' + n.toLocaleString('en-PH');
+
+		// --- Readback: show what other owners have reported. ---
+		// Only meaningful on a page about one specific car.
+		(async () => {
+			if (!make || !model) return;
+			try {
+				const res = await fetch(`/api/pms-stats/?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
+				const data = await res.json();
+				if (!data?.ok || !data.total) return; // nothing yet — stay hidden
+				const parts: string[] = [];
+				for (const [key, name] of [['light', 'light PMS'], ['major', 'major PMS']] as const) {
+					const g = data.groups?.[key];
+					if (!g?.n) continue;
+					if (g.median) parts.push(`<strong>${name}: median ${peso(g.median)}</strong> (${g.n} reports)`);
+					else parts.push(`${name}: ${g.n} report${g.n > 1 ? 's' : ''} so far — too few to publish a figure`);
+				}
+				if (!parts.length) return;
+				stats.innerHTML = `Owner-reported so far: ${parts.join(' · ')}`;
+				stats.hidden = false;
+			} catch {
+				/* stats are a bonus; never break the article */
+			}
+		})();
+
+		// --- Submit ---
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const fd = new FormData(form);
+			const amount = Number(fd.get('amountPhp'));
+			if (!Number.isFinite(amount) || amount < 100) {
+				msg.textContent = 'Ilagay muna ang halagang binayaran.';
+				msg.className = 'pms-msg is-err';
+				return;
+			}
+
+			const btn = form.querySelector('.pms-submit') as HTMLButtonElement;
+			btn.disabled = true;
+			msg.textContent = 'Sending…';
+			msg.className = 'pms-msg';
+
+			const payload: Record<string, unknown> = { make, model };
+			for (const [k, v] of fd.entries()) {
+				const s = typeof v === 'string' ? v.trim() : '';
+				if (s !== '') payload[k] = s;
+			}
+
+			try {
+				// Trailing slash matters: the site 308-redirects bare paths.
+				const res = await fetch('/api/pms-report/', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload),
+				});
+				const data = await res.json().catch(() => ({}));
+				if (!res.ok) throw new Error(data?.error || 'Failed');
+				const who = String(payload.model || model || '').trim();
+				form.innerHTML =
+					'<p class="pms-thanks"><strong>Salamat!</strong> Naipasa na ang ulat mo. ' +
+					'Dadaan muna ito sa moderation bago lumabas dito — nakakatulong ito sa ibang ' +
+					(who ? who + ' owners' : 'mga owner') +
+					' na malaman ang totoong presyo.</p>';
+			} catch (err) {
+				msg.textContent = err instanceof Error ? err.message : 'Hindi na-save. Subukan ulit.';
+				msg.className = 'pms-msg is-err';
+				btn.disabled = false;
+			}
+		});
+	});
+</script>
+
+<style>
+	.pms-report {
+		margin: 2.5em 0;
+		padding: 1.5rem;
+		border: 1px solid var(--metal-gray-light, #d8dade);
+		border-left: 5px solid var(--red-mica, #b91c1c);
+		background: var(--paper-off, #f7f7f8);
+		border-radius: 4px;
+	}
+	.pms-head h3 {
+		margin: 0 0 0.35em;
+		font-size: 1.25rem;
+		line-height: 1.2;
+	}
+	.pms-sub {
+		margin: 0 0 1rem;
+		font-size: 0.95rem;
+		line-height: 1.5;
+		color: var(--metal-gray, #55595f);
+	}
+	.pms-stats {
+		margin: 0 0 1rem;
+		padding: 0.6rem 0.8rem;
+		background: var(--paper, #fff);
+		border: 1px solid var(--metal-gray-light, #d8dade);
+		border-radius: 3px;
+		font-size: 0.92rem;
+		line-height: 1.5;
+	}
+	.pms-hp {
+		position: absolute;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+	}
+	.pms-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75rem;
+	}
+	.pms-field {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		min-width: 0;
+	}
+	.pms-field label {
+		font-size: 0.82rem;
+		font-weight: 600;
+		color: var(--metal-gray, #55595f);
+	}
+	.pms-field input,
+	.pms-field select,
+	.pms-field textarea {
+		padding: 0.5rem 0.6rem;
+		font: inherit;
+		font-size: 0.95rem;
+		border: 1px solid var(--metal-gray-light, #c9ccd1);
+		border-radius: 3px;
+		background: var(--paper, #fff);
+		color: var(--text-color, #111827);
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.pms-field input:focus,
+	.pms-field select:focus,
+	.pms-field textarea:focus {
+		outline: 2px solid var(--red-mica, #b91c1c);
+		outline-offset: 1px;
+	}
+	.pms-more {
+		margin-top: 0.85rem;
+	}
+	.pms-more summary {
+		cursor: pointer;
+		font-size: 0.88rem;
+		font-weight: 600;
+		color: var(--metal-gray, #55595f);
+	}
+	.pms-row-more {
+		margin-top: 0.6rem;
+	}
+	.pms-row-car {
+		grid-template-columns: 1fr 1fr;
+		margin-bottom: 0.75rem;
+	}
+	.pms-more .pms-field + .pms-field,
+	.pms-more > .pms-field {
+		margin-top: 0.6rem;
+	}
+	.pms-actions {
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		flex-wrap: wrap;
+		margin-top: 1rem;
+	}
+	.pms-submit {
+		padding: 0.6rem 1.15rem;
+		font: inherit;
+		font-weight: 700;
+		color: #fff;
+		background: var(--red-mica, #b91c1c);
+		border: none;
+		border-radius: 3px;
+		cursor: pointer;
+	}
+	.pms-submit:hover:not(:disabled) {
+		background: var(--red-mica-dark, #8f1414);
+	}
+	.pms-submit:disabled {
+		opacity: 0.6;
+		cursor: default;
+	}
+	.pms-msg {
+		font-size: 0.9rem;
+	}
+	.pms-msg.is-err {
+		color: var(--red-mica, #b91c1c);
+		font-weight: 600;
+	}
+	.pms-fine {
+		margin: 0.9rem 0 0;
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: var(--metal-gray, #6b7076);
+	}
+	.pms-thanks {
+		margin: 0;
+		font-size: 1rem;
+		line-height: 1.55;
+	}
+
+	@media (max-width: 640px) {
+		.pms-report {
+			padding: 1.15rem;
+		}
+		.pms-row {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>

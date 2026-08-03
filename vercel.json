@@ -1,3 +1,9 @@
 {
-	"trailingSlash": true
+	"trailingSlash": true,
+	"crons": [
+		{
+			"path": "/api/health/",
+			"schedule": "0 3 * * *"
+		}
+	]
 }
