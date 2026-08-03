@@ -24,19 +24,18 @@ interface Props {
 
 const { make = '', model = '', label } = Astro.props;
 const known = Boolean(make && model);
-const carName = label ?? (known ? `${make} ${model}` : 'sasakyan');
+const carName = label ?? (known ? `${make} ${model}` : 'car');
 const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 ---
 
 <section class="pms-report" data-make={make} data-model={model} data-uid={uid}>
 	<div class="pms-head">
-		<h3>Magkano ang binayaran mo?</h3>
+		<h3>Magkano damage boss?</h3>
 		<p class="pms-sub">
-			Walang opisyal na price list ang karamihan ng brands sa Pilipinas — kaya estimates
-			ang halos lahat ng nababasa mo, kasama na ang sa amin. Kung nagpa-PMS ka na sa
-			<strong>{carName}</strong> mo, i-share mo ang totoong presyo. Anonymous ito, 10 seconds lang.
+			Most brands in the Philippines publish no official price list — which is why almost
+			every figure you read is an estimate, ours included. If you've had your
+			<strong>{carName}</strong> serviced, share what it actually cost. Anonymous, takes 10 seconds.
 		</p>
-	</div>
 	</div>
 
 	<p class="pms-stats" data-role="stats" hidden></p>
@@ -63,16 +62,16 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 
 		<div class="pms-row">
 			<div class="pms-field">
-				<label for={`${uid}-type`}>Anong service?</label>
+				<label for={`${uid}-type`}>Service type</label>
 				<select id={`${uid}-type`} name="serviceType" required>
 					<option value="light">Light / regular PMS</option>
 					<option value="major">Major / heavy PMS</option>
-					<option value="other">Iba (repair, etc.)</option>
+					<option value="other">Other (repair, etc.)</option>
 				</select>
 			</div>
 
 			<div class="pms-field">
-				<label for={`${uid}-amount`}>Magkano lahat? (₱)</label>
+				<label for={`${uid}-amount`}>Total paid (₱)</label>
 				<input
 					type="number"
 					id={`${uid}-amount`}
@@ -86,10 +85,10 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 			</div>
 
 			<div class="pms-field">
-				<label for={`${uid}-where`}>Saan?</label>
+				<label for={`${uid}-where`}>Where was it serviced?</label>
 				<select id={`${uid}-where`} name="serviceLocation" required>
-					<option value="casa">Casa / dealer</option>
-					<option value="independent">Talyer / independent</option>
+					<option value="casa">Casa (dealership)</option>
+					<option value="independent">Independent shop (talyer)</option>
 				</select>
 			</div>
 		</div>
@@ -117,13 +116,13 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 		</details>
 
 		<div class="pms-actions">
-			<button type="submit" class="pms-submit">I-share ang presyo</button>
+			<button type="submit" class="pms-submit">Share what you paid</button>
 			<span class="pms-msg" data-role="msg" role="status" aria-live="polite"></span>
 		</div>
 
 		<p class="pms-fine">
-			Walang pangalan, walang email, walang login. Ang mga ulat ay dumadaan sa moderation
-			bago ipakita, at ipinapakita lang bilang <em>owner-reported</em> — hindi bilang opisyal na presyo.
+			No name, no email, no login. Every report is moderated before it appears, and is
+			always shown as <em>owner-reported</em> — never as an official price.
 		</p>
 	</form>
 </section>
@@ -170,7 +169,7 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 			const fd = new FormData(form);
 			const amount = Number(fd.get('amountPhp'));
 			if (!Number.isFinite(amount) || amount < 100) {
-				msg.textContent = 'Ilagay muna ang halagang binayaran.';
+				msg.textContent = 'Enter the amount you paid.';
 				msg.className = 'pms-msg is-err';
 				return;
 			}
@@ -197,12 +196,12 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 				if (!res.ok) throw new Error(data?.error || 'Failed');
 				const who = String(payload.model || model || '').trim();
 				form.innerHTML =
-					'<p class="pms-thanks"><strong>Salamat!</strong> Naipasa na ang ulat mo. ' +
-					'Dadaan muna ito sa moderation bago lumabas dito — nakakatulong ito sa ibang ' +
-					(who ? who + ' owners' : 'mga owner') +
-					' na malaman ang totoong presyo.</p>';
+					'<p class="pms-thanks"><strong>Thank you!</strong> Your report has been submitted. ' +
+					'It goes through moderation before appearing here — this is what helps other ' +
+					(who ? who + ' owners' : 'owners') +
+					' find out what a service really costs.</p>';
 			} catch (err) {
-				msg.textContent = err instanceof Error ? err.message : 'Hindi na-save. Subukan ulit.';
+				msg.textContent = err instanceof Error ? err.message : 'Could not save. Please try again.';
 				msg.className = 'pms-msg is-err';
 				btn.disabled = false;
 			}
