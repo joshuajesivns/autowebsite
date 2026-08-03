@@ -22,12 +22,21 @@ export const GET: APIRoute = async () => {
 	const started = Date.now();
 	try {
 		const supabase = getPublicSupabase();
-		const { error } = await supabase
+		const { error, count } = await supabase
 			.from('pms_reports')
-			.select('id', { count: 'exact', head: true });
+			.select('id', { count: 'exact', head: true })
+			.eq('status', 'approved');
 		if (error) throw new Error(error.message);
 
-		return json({ ok: true, datastore: 'up', ms: Date.now() - started }, 200);
+		// `visibleApproved` exists to catch a specific false-positive: when a
+		// Row Level Security policy blocks reads, Supabase returns an empty
+		// result rather than an error, so a misconfigured table looks perfectly
+		// healthy. Surfacing the count makes "connected but cannot read" — which
+		// silently disables the stats readback — visible at a glance.
+		return json(
+			{ ok: true, datastore: 'up', visibleApproved: count ?? 0, ms: Date.now() - started },
+			200,
+		);
 	} catch (err) {
 		const message = err instanceof Error ? err.message : String(err);
 		console.error('[health] datastore unreachable:', message);
