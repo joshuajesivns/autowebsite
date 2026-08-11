@@ -1,0 +1,331 @@
+---
+export const prerender = false;
+
+import PageLayout from '../../layouts/Page.astro';
+import { ADMIN_COOKIE_NAME, isValidAdminSession } from '../../lib/adminAuth';
+import { getAdminSupabase } from '../../lib/supabase';
+
+if (!isValidAdminSession(Astro.cookies.get(ADMIN_COOKIE_NAME)?.value)) {
+	return Astro.redirect('/admin/login');
+}
+
+// Current dataset size, so the page opens by answering "how far off is the
+// MIN_SAMPLE=3 threshold?" rather than making Joshua go look it up.
+const supabase = getAdminSupabase();
+const { data: existing } = await supabase
+	.from('pms_reports')
+	.select('make, model, service_type, status')
+	.eq('status', 'approved');
+
+const approved = existing ?? [];
+const byModel = new Map<string, { light: number; major: number; other: number }>();
+for (const r of approved) {
+	const key = `${r.make} ${r.model}`;
+	const entry = byModel.get(key) ?? { light: 0, major: 0, other: 0 };
+	const t = r.service_type as 'light' | 'major' | 'other';
+	if (t in entry) entry[t]++;
+	byModel.set(key, entry);
+}
+const modelRows = [...byModel.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+const MIGRATION_SQL = `alter table pms_reports
+  add column if not exists source text not null default 'form';
+
+create index if not exists pms_reports_source_idx on pms_reports (source);`;
+
+const SAMPLE = `make\tmodel\tyear\tservice_type\tmileage_km\tamount_php\tlocation\tregion\tdate\tnotes
+Toyota\tVios\t2021\tlight\t20000\t3850\tcasa\tLaguna\t2026-06-14\tincludes oil + filter
+Toyota\tVios\t2019\theavy\t40000\t12400\tcasa\tMetro Manila\t2026-05-02\t
+Toyota\tVios\t2018\tlight\t55000\t2100\ttalyer\tCavite\t2026-07-11\tsynthetic, own parts`;
+---
+
+<PageLayout title="Seed PMS Data" description="Bulk-load owner-reported PMS cost reports.">
+	<p class="lede">
+		Paste rows from a spreadsheet to load many reports at once. The public form is for readers;
+		this is for the reports you collect yourself.
+	</p>
+
+	<div class="honesty">
+		<h2>Read this before you paste</h2>
+		<p>
+			The widget tells every reader its figures are <strong>owner-reported</strong>, and the site's
+			whole position is that we're the source of real Philippine ownership-cost data. That claim is
+			only worth something if it's true, so this tool makes you say where each batch came from:
+		</p>
+		<ul>
+			<li>
+				<strong>Owner-collected</strong> — a real owner told you what they actually paid (an FB group
+				reply, a friend's receipt, your own car). Counts toward the published median, because it
+				<em>is</em> an owner report; it just arrived through your keyboard instead of the form.
+			</li>
+			<li>
+				<strong>Reference</strong> — a published or quoted price with no owner attached (a casa price
+				list, a dealer quote, a figure from an article). Stored and visible here, but
+				<strong>excluded from the owner-reported median</strong> — mixing it in would make the label
+				on the widget false.
+			</li>
+		</ul>
+		<p class="no-invent">
+			Never enter a number nobody actually paid or quoted. One fabricated row costs more than thirty
+			real ones are worth.
+		</p>
+	</div>
+
+	<details class="migration">
+		<summary>One-time setup: add the <code>source</code> column</summary>
+		<p>
+			Run this once in the Supabase SQL editor. Existing rows default to <code>form</code>, which is
+			correct — everything already in the table came through the public form.
+		</p>
+		<pre>{MIGRATION_SQL}</pre>
+	</details>
+
+	<h2>Current approved data</h2>
+	{modelRows.length === 0 ? (
+		<p class="empty">
+			No approved reports yet — every widget on the site is showing an empty readback line. A model
+			needs <strong>3 reports of the same service type</strong> before a median publishes.
+		</p>
+	) : (
+		<table class="counts">
+			<thead>
+				<tr><th>Model</th><th>Light</th><th>Heavy / major</th><th>Other</th></tr>
+			</thead>
+			<tbody>
+				{modelRows.map(([name, c]) => (
+					<tr>
+						<td>{name}</td>
+						<td class={c.light >= 3 ? 'ok' : 'low'}>{c.light}</td>
+						<td class={c.major >= 3 ? 'ok' : 'low'}>{c.major}</td>
+						<td>{c.other}</td>
+					</tr>
+				))}
+			</tbody>
+		</table>
+	)}
+
+	<h2>Paste your rows</h2>
+	<p class="hint">
+		Tab-separated (paste straight from Sheets/Excel) or comma-separated. The first line must be a
+		header row. Only <code>make</code>, <code>model</code>, <code>service_type</code>,
+		<code>amount_php</code> and <code>location</code> are required — the rest are optional.
+		"heavy" and "major" both work; so do "talyer" and "independent".
+	</p>
+
+	<textarea id="paste" rows="12" spellcheck="false" placeholder={SAMPLE}></textarea>
+
+	<div class="controls">
+		<button type="button" id="load-sample" class="ghost">Load sample</button>
+		<button type="button" id="preview-btn">Check rows</button>
+	</div>
+
+	<div id="preview"></div>
+
+	<div class="insert-box" id="insert-box" hidden>
+		<label for="source">Where did this batch come from?</label>
+		<select id="source">
+			<option value="">— choose —</option>
+			<option value="owner-collected">Owner-collected — real owners told me what they paid</option>
+			<option value="reference">Reference — published/quoted prices, no owner attached</option>
+		</select>
+		<button type="button" id="insert-btn" class="primary" disabled>Insert rows</button>
+		<p id="insert-note" class="note"></p>
+	</div>
+
+	<div id="result"></div>
+</PageLayout>
+
+<script define:vars={{ SAMPLE }}>
+	const $ = (id) => document.getElementById(id);
+	const paste = $('paste');
+	const previewEl = $('preview');
+	const insertBox = $('insert-box');
+	const sourceSel = $('source');
+	const insertBtn = $('insert-btn');
+	const insertNote = $('insert-note');
+	const resultEl = $('result');
+
+	let lastValidCount = 0;
+
+	$('load-sample').addEventListener('click', () => {
+		paste.value = SAMPLE;
+		runPreview();
+	});
+
+	$('preview-btn').addEventListener('click', runPreview);
+
+	// Ctrl/Cmd+Enter mirrors the publish tool's shortcut.
+	paste.addEventListener('keydown', (e) => {
+		if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') runPreview();
+	});
+
+	sourceSel.addEventListener('change', () => {
+		insertBtn.disabled = !sourceSel.value || lastValidCount === 0;
+		insertNote.textContent =
+			sourceSel.value === 'reference'
+				? 'These rows will be stored but kept out of the owner-reported median.'
+				: sourceSel.value === 'owner-collected'
+					? 'These rows will count toward the published owner-reported median.'
+					: '';
+	});
+
+	async function runPreview() {
+		resultEl.innerHTML = '';
+		const text = paste.value.trim();
+		if (!text) {
+			previewEl.innerHTML = '<p class="empty">Nothing pasted yet.</p>';
+			insertBox.hidden = true;
+			return;
+		}
+
+		previewEl.innerHTML = '<p class="empty">Checking…</p>';
+		const res = await fetch('/api/admin/pms-bulk/', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ action: 'preview', text }),
+		});
+		const data = await res.json();
+
+		if (!res.ok) {
+			previewEl.innerHTML = `<p class="error">${escapeHtml(data.error ?? 'Preview failed.')}</p>`;
+			insertBox.hidden = true;
+			return;
+		}
+
+		lastValidCount = data.validCount;
+		renderPreview(data);
+
+		insertBox.hidden = data.validCount === 0;
+		insertBtn.disabled = !sourceSel.value || data.validCount === 0;
+	}
+
+	function renderPreview(data) {
+		const warn = data.unknownHeaders.length
+			? `<p class="warn">Ignored unrecognised column${data.unknownHeaders.length > 1 ? 's' : ''}: <strong>${data.unknownHeaders.map(escapeHtml).join(', ')}</strong> — check for a typo if you expected these to load.</p>`
+			: '';
+
+		const summary = `<p class="summary"><strong>${data.validCount}</strong> row${data.validCount === 1 ? '' : 's'} ready${data.invalidCount ? ` · <span class="bad">${data.invalidCount} with problems (these will be skipped)</span>` : ''}</p>`;
+
+		const body = data.rows
+			.map((r) => {
+				const bad = r.errors.length > 0;
+				return `<tr class="${bad ? 'row-bad' : ''}">
+					<td>${r.line}</td>
+					<td>${escapeHtml(r.make)} ${escapeHtml(r.model)}${r.model_year ? ` (${r.model_year})` : ''}</td>
+					<td>${r.service_type ?? '—'}</td>
+					<td>${r.amount_php ? '₱' + r.amount_php.toLocaleString() : '—'}</td>
+					<td>${r.service_location ?? '—'}</td>
+					<td>${r.mileage_km ? r.mileage_km.toLocaleString() + ' km' : '—'}</td>
+					<td class="err">${bad ? escapeHtml(r.errors.join('; ')) : '✓'}</td>
+				</tr>`;
+			})
+			.join('');
+
+		previewEl.innerHTML = `${warn}${summary}
+			<div class="table-scroll"><table class="preview">
+				<thead><tr><th>Line</th><th>Car</th><th>Type</th><th>Amount</th><th>Where</th><th>Mileage</th><th>Status</th></tr></thead>
+				<tbody>${body}</tbody>
+			</table></div>`;
+	}
+
+	insertBtn.addEventListener('click', async () => {
+		insertBtn.disabled = true;
+		insertBtn.textContent = 'Inserting…';
+		const res = await fetch('/api/admin/pms-bulk/', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ action: 'insert', text: paste.value, source: sourceSel.value }),
+		});
+		const data = await res.json();
+		insertBtn.textContent = 'Insert rows';
+		insertBtn.disabled = false;
+
+		if (!res.ok) {
+			resultEl.innerHTML = `<p class="error">${escapeHtml(data.error ?? 'Insert failed.')}</p>`;
+			return;
+		}
+		resultEl.innerHTML = `<p class="success">Inserted ${data.inserted} row${data.inserted === 1 ? '' : 's'}${data.skipped ? `, skipped ${data.skipped}` : ''}. <a href="/admin/pms-seed/">Reload</a> to see updated counts.</p>`;
+		paste.value = '';
+		previewEl.innerHTML = '';
+		insertBox.hidden = true;
+	});
+
+	function escapeHtml(s) {
+		return String(s).replace(/[&<>"']/g, (c) =>
+			({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+		);
+	}
+</script>
+
+<style>
+	.lede { color: var(--metal-gray); max-width: 62ch; }
+	.honesty {
+		background: var(--paper-off);
+		border-left: 4px solid var(--red-mica);
+		padding: 1.2em 1.4em;
+		margin: 1.5em 0;
+	}
+	.honesty h2 { margin-top: 0; font-size: 1.05rem; text-transform: uppercase; }
+	.honesty ul { margin: 0.8em 0; padding-left: 1.2em; }
+	.honesty li { margin-bottom: 0.6em; font-size: 0.92rem; }
+	.no-invent { font-weight: 700; margin-bottom: 0; }
+	.migration { margin: 1.5em 0; font-size: 0.9rem; }
+	.migration summary { cursor: pointer; font-weight: 700; }
+	.migration pre {
+		background: var(--black-mica-2, #111827);
+		color: #e5e7eb;
+		padding: 1em;
+		overflow-x: auto;
+		font-size: 0.82rem;
+	}
+	.hint { font-size: 0.9rem; color: var(--metal-gray); max-width: 70ch; }
+	textarea {
+		width: 100%;
+		font-family: ui-monospace, monospace;
+		font-size: 0.85rem;
+		padding: 0.8em;
+		border: 1px solid var(--metal-gray-light);
+		background: var(--paper);
+	}
+	.controls { display: flex; gap: 0.75em; margin: 0.75em 0 1.5em; }
+	button {
+		text-transform: uppercase;
+		font-weight: 700;
+		padding: 0.6em 1.2em;
+		cursor: pointer;
+		border: 1px solid var(--black-mica-2);
+		background: var(--black-mica-2);
+		color: white;
+		font-size: 0.85rem;
+	}
+	button.ghost { background: transparent; color: var(--black-mica-2); }
+	button.primary { background: var(--red-mica); border-color: var(--red-mica); }
+	button:disabled { opacity: 0.45; cursor: not-allowed; }
+	table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+	table.counts { margin-bottom: 1.5em; max-width: 34em; }
+	th, td { text-align: left; padding: 0.4em 0.7em; border-bottom: 1px solid var(--metal-gray-light); }
+	th { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.04em; }
+	.ok { color: #228B22; font-weight: 700; }
+	.low { color: var(--metal-gray); }
+	.table-scroll { overflow-x: auto; }
+	.row-bad { background: rgba(185, 28, 28, 0.06); }
+	.err { font-size: 0.8rem; }
+	.summary { margin: 1em 0 0.5em; }
+	.bad { color: var(--red-mica-dark, #B91C1C); }
+	.warn { color: #92400e; font-size: 0.88rem; }
+	.empty, .note { color: var(--metal-gray); font-size: 0.9rem; }
+	.error { color: var(--red-mica-dark, #B91C1C); font-weight: 700; }
+	.success { color: #228B22; font-weight: 700; }
+	.insert-box {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.8em;
+		margin: 1.5em 0;
+		padding: 1.2em;
+		border: 1px solid var(--metal-gray-light);
+	}
+	.insert-box label { font-weight: 700; font-size: 0.9rem; }
+	.insert-box select { padding: 0.5em; font-size: 0.9rem; border: 1px solid var(--metal-gray-light); }
+	.insert-box .note { flex-basis: 100%; margin: 0; }
+</style>

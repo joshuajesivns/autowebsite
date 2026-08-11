@@ -8,6 +8,12 @@ export const prerender = false;
  *
  * Only APPROVED rows count — unmoderated submissions never reach a reader.
  *
+ * And only rows with an OWNER BEHIND THEM count. The widget labels its figures
+ * "owner-reported," so seeded `reference` rows (a casa price list, a published
+ * quote — real numbers, but nobody paid them) are excluded here. They live in
+ * the same table because they're useful context in the admin, but folding them
+ * into this median would quietly turn that label into a lie.
+ *
  * MIN_SAMPLE exists because the whole site's credibility rests on not
  * overclaiming: a "median" drawn from one or two reports is an anecdote
  * wearing a statistic's clothes. Below the threshold we return the raw count
@@ -23,12 +29,23 @@ export const GET: APIRoute = async ({ url }) => {
 
 	try {
 		const supabase = getPublicSupabase();
-		const { data, error } = await supabase
-			.from('pms_reports')
-			.select('service_type, service_location, amount_php')
-			.eq('status', 'approved')
-			.ilike('make', make)
-			.ilike('model', model);
+		const base = () =>
+			supabase
+				.from('pms_reports')
+				.select('service_type, service_location, amount_php')
+				.eq('status', 'approved')
+				.ilike('make', make)
+				.ilike('model', model);
+
+		// The `source` column is added by a manual migration, so a deploy can
+		// land before it exists. Ask for the filtered set first and fall back to
+		// the unfiltered one if the column isn't there yet — without the column
+		// there are no reference rows to exclude anyway, so the fallback is
+		// exactly correct rather than merely tolerable.
+		let { data, error } = await base().neq('source', 'reference');
+		if (error && /column .*source.* does not exist/i.test(error.message)) {
+			({ data, error } = await base());
+		}
 
 		if (error) throw new Error(error.message);
 

@@ -28,7 +28,8 @@ const carName = label ?? (known ? `${make} ${model}` : 'car');
 const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 ---
 
-<section class="pms-report" data-make={make} data-model={model} data-uid={uid}>
+{/* Stable id (one widget per page) so the sidebar prompt can jump to it. */}
+<section id="share-what-you-paid" class="pms-report" data-make={make} data-model={model} data-uid={uid}>
 	<div class="pms-head">
 		<h3>Magkano damage boss?</h3>
 		<p class="pms-sub">

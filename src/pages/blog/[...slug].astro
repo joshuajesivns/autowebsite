@@ -12,9 +12,14 @@ export async function getStaticPaths() {
 type Props = CollectionEntry<'blog'>;
 
 const post = Astro.props;
-const { Content } = await render(post);
+const { Content, headings } = await render(post);
+
+// The sidebar prompt only makes sense on pages that actually contain the
+// widget, and the widget is placed per-post in MDX rather than by the layout —
+// so detect it from the source instead of maintaining a second list.
+const hasPmsWidget = post.body?.includes('<PmsReport') ?? false;
 ---
 
-<BlogPost {...post.data}>
+<BlogPost {...post.data} headings={headings} hasPmsWidget={hasPmsWidget}>
 	<Content />
 </BlogPost>

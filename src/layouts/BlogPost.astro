@@ -9,10 +9,19 @@ import { SITE_URL } from '../consts';
 import { buildBlogGraph, showsProducts } from '../lib/schema';
 import '../styles/apex.css';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<'blog'>['data'] & {
+	/** H2/H3 list from render(post) — drives the sidebar contents. */
+	headings?: { depth: number; slug: string; text: string }[];
+	/** True when the post embeds <PmsReport>, so the sidebar can prompt for it. */
+	hasPmsWidget?: boolean;
+};
 
-const { title, description, pubDate, updatedDate, heroImage, heroAlt, faq, tags, vertical, vehicle, pms, featuredProducts } =
+const { title, description, pubDate, updatedDate, heroImage, heroAlt, faq, tags, vertical, vehicle, pms, featuredProducts, headings = [], hasPmsWidget = false } =
 	Astro.props;
+
+// Section-level only. H3s would turn a 14-section guide into a 40-line list
+// that's harder to scan than the article itself.
+const toc = headings.filter((h) => h.depth === 2);
 
 // ── Structured data ────────────────────────────────────────────────────────
 // The whole @graph is assembled by the shared engine in src/lib/schema.ts, which
@@ -74,11 +83,29 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
                 </header>
                 
                 <div class="layout-container">
+                    {/* Desktop-only rail (hidden under 1024px). It previously held a
+                        card that just restated the title; now it navigates. Anything
+                        essential must stay in the article body, because most of our
+                        readers are on phones and never see this column. */}
                     <aside class="sticky-toc">
-                        <div class="toc-card">
-                            <h3>Specifications & Documentation</h3>
-                            <p>Technical review of the {title.split(':')[0]}.</p>
-                        </div>
+                        {toc.length > 2 && (
+                            <nav class="toc-card" aria-labelledby="toc-heading">
+                                <h3 id="toc-heading">In This Guide</h3>
+                                <ol>
+                                    {toc.map((h) => (
+                                        <li><a href={`#${h.slug}`}>{h.text}</a></li>
+                                    ))}
+                                </ol>
+                            </nav>
+                        )}
+
+                        {hasPmsWidget && (
+                            <div class="toc-prompt">
+                                <p class="prompt-q">Magkano sa'yo?</p>
+                                <p class="prompt-sub">Naka-PMS ka na? Share what you actually paid — anonymous, 10 seconds.</p>
+                                <a class="prompt-cta" href="#share-what-you-paid">Share what you paid →</a>
+                            </div>
+                        )}
                     </aside>
                     
                     <div class="prose">
@@ -120,6 +147,46 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
                         </div>
                     </div>
                 </div>
+
+                <script>
+                    // Highlights the sidebar entry for the section being read.
+                    // Guarded on the rail existing: it's display:none under
+                    // 1024px, so on phones this observer never gets built.
+                    const rail = document.querySelector('.toc-card');
+                    if (rail && window.matchMedia('(min-width: 1024px)').matches) {
+                        const links = new Map<string, HTMLAnchorElement>();
+                        rail.querySelectorAll('a[href^="#"]').forEach((a) => {
+                            const el = a as HTMLAnchorElement;
+                            links.set(decodeURIComponent(el.hash.slice(1)), el);
+                        });
+
+                        const seen = new Set<string>();
+                        const observer = new IntersectionObserver(
+                            (entries) => {
+                                for (const entry of entries) {
+                                    if (entry.isIntersecting) seen.add(entry.target.id);
+                                    else seen.delete(entry.target.id);
+                                }
+                                // Mark the topmost visible section, so scrolling
+                                // past a short heading doesn't leave two active.
+                                let active: string | null = null;
+                                for (const id of links.keys()) {
+                                    if (seen.has(id)) { active = id; break; }
+                                }
+                                links.forEach((link, id) => link.classList.toggle('is-active', id === active));
+                            },
+                            // Bias toward the upper third: a heading is "current"
+                            // once it reaches reading position, not when it first
+                            // peeks in at the bottom of the viewport.
+                            { rootMargin: '-80px 0px -66% 0px' },
+                        );
+
+                        links.forEach((_, id) => {
+                            const target = document.getElementById(id);
+                            if (target) observer.observe(target);
+                        });
+                    }
+                </script>
 			</article>
 		</main>
 		<Footer />
@@ -226,6 +293,10 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
         background: var(--paper-off);
         border-left: 4px solid var(--red-mica);
         padding: 1.5em;
+        /* A 14-section guide would otherwise push the prompt below the fold on
+           a laptop. Cap the list and let it scroll inside the sticky rail. */
+        max-height: calc(100vh - 14em);
+        overflow-y: auto;
     }
     .toc-card h3 {
         font-size: 0.85rem;
@@ -233,10 +304,75 @@ const showProducts = showsProducts(vertical) && !!(featuredProducts && featuredP
         letter-spacing: 0.05em;
         margin-bottom: 1em;
     }
-    .toc-card p {
-        font-size: 0.9rem;
-        color: var(--metal-gray);
+    .toc-card ol {
+        list-style: none;
+        padding: 0;
         margin: 0;
+        counter-reset: toc;
+    }
+    .toc-card li {
+        counter-increment: toc;
+        margin-bottom: 0.55em;
+        line-height: 1.35;
+    }
+    .toc-card li::before {
+        content: counter(toc);
+        color: var(--metal-gray-light);
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-right: 0.6em;
+    }
+    .toc-card a {
+        font-size: 0.83rem;
+        color: var(--metal-gray);
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+    }
+    .toc-card a:hover,
+    .toc-card a.is-active {
+        color: var(--black-mica-2);
+        border-bottom-color: var(--red-mica);
+    }
+    .toc-card a.is-active {
+        font-weight: 700;
+    }
+
+    /* Jump targets shouldn't land flush against the viewport edge. */
+    .prose :global(h2),
+    .prose :global(#share-what-you-paid) {
+        scroll-margin-top: 2rem;
+    }
+
+    .toc-prompt {
+        margin-top: 1.25em;
+        padding: 1.25em;
+        background: var(--black-mica-2, #111827);
+        color: var(--paper, #fff);
+    }
+    .prompt-q {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 0.4em;
+    }
+    .prompt-sub {
+        font-size: 0.8rem;
+        line-height: 1.45;
+        opacity: 0.75;
+        margin: 0 0 0.9em;
+    }
+    .prompt-cta {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--paper, #fff);
+        background: var(--red-mica);
+        padding: 0.6em 1em;
+        text-decoration: none;
+    }
+    .prompt-cta:hover {
+        background: var(--red-mica-dark, #B91C1C);
     }
 
     .prose {
