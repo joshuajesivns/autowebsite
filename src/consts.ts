@@ -15,6 +15,13 @@ export const GOOGLE_SITE_VERIFICATION = 'HSbvWsGQs2LsqcS746ovWF7VAdN57syR2MZeKmg
 // create the AdSense account (assigned at signup, before approval). The ad loader
 // only renders once this is set — and also add the matching line to public/ads.txt.
 export const ADSENSE_CLIENT = 'ca-pub-5056058699610793';
+// The ad LOADER (adsbygoogle.js, ~57 kB of third-party JS) is gated separately from
+// the publisher ID. The application was rejected 2026-07-22, so until it's approved
+// the script serves no ads and only costs load time — measured as part of a 223 KiB
+// unused-JS penalty that was holding FCP at 4.2s and LCP at 6.3s on mobile.
+// The `google-adsense-account` meta tag still renders (it's free and is what the
+// re-application verifies against). Flip this to `true` on approval.
+export const ADSENSE_ACTIVE = false;
 
 // Official profiles — populate as you create them (used for Organization sameAs).
 export const SOCIAL_LINKS: string[] = [

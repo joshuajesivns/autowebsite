@@ -4,7 +4,7 @@
 import '../styles/apex.css';
 import type { ImageMetadata } from 'astro';
 import FallbackImage from '../assets/blog-placeholder-1.jpg';
-import { SITE_TITLE, ORG, SOCIAL_LINKS, GA_MEASUREMENT_ID, GOOGLE_SITE_VERIFICATION, ADSENSE_CLIENT } from '../consts';
+import { SITE_TITLE, ORG, SOCIAL_LINKS, GA_MEASUREMENT_ID, GOOGLE_SITE_VERIFICATION, ADSENSE_CLIENT, ADSENSE_ACTIVE } from '../consts';
 import { Font } from 'astro:assets';
 
 interface Props {
@@ -119,14 +119,28 @@ const siteSchema = {
 {GA_MEASUREMENT_ID && (
 	<script is:inline set:html={`
 		if (location.hostname.endsWith('apexenginehq.com')) {
-			var s=document.createElement('script');
-			s.async=true;
-			s.src='https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
-			document.head.appendChild(s);
+			// gtag.js is ~163 kB. Even loaded async it competes for bandwidth on a
+			// throttled mobile connection and was part of what held FCP at 4.2s.
+			// Analytics doesn't need to be in the paint path, so injection waits for
+			// the browser to go idle. dataLayer is queued up front, so any gtag()
+			// calls made before the script lands are replayed once it initialises.
 			window.dataLayer=window.dataLayer||[];
 			function gtag(){dataLayer.push(arguments);}
+			window.gtag=gtag;
 			gtag('js',new Date());
 			gtag('config','${GA_MEASUREMENT_ID}');
+			var loaded=false;
+			function loadGa(){
+				if(loaded) return; loaded=true;
+				var s=document.createElement('script');
+				s.async=true;
+				s.src='https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}';
+				document.head.appendChild(s);
+			}
+			// Idle first; the timeout and the load fallback guarantee it still fires
+			// on browsers without requestIdleCallback (Safari) and on busy pages.
+			if('requestIdleCallback' in window){requestIdleCallback(loadGa,{timeout:3000});}
+			else{window.addEventListener('load',function(){setTimeout(loadGa,1200);});}
 		}
 	`} />
 )}
@@ -134,7 +148,7 @@ const siteSchema = {
 <!-- Google AdSense (Auto ads + site verification). Loads only on the live domain,
      same as GA, so previews/localhost don't serve ads. Renders only once
      ADSENSE_CLIENT is set in consts.ts. -->
-{ADSENSE_CLIENT && (
+{ADSENSE_CLIENT && ADSENSE_ACTIVE && (
 	<script is:inline set:html={`
 		if (location.hostname.endsWith('apexenginehq.com')) {
 			var s=document.createElement('script');
