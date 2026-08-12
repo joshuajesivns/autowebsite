@@ -13,6 +13,12 @@
  *     and the actual content asset all at once.
  *  4. Never publish a number from a sample too small to mean anything —
  *     /api/pms-stats enforces that server-side.
+ *  5. Keep our research and owner reports on separate lines, always labelled.
+ *     An empty widget converts at zero, so it has to show something useful on
+ *     day one — but the fix for that is showing our own researched figures
+ *     under our own name, never seeding the owner dataset with estimates.
+ *     Fabricated rows would destroy the only thing that makes this data worth
+ *     collecting: that it's real, and therefore citable.
  */
 interface Props {
 	/** Omit both on non-model pages (e.g. the pillar) to show car inputs instead. */
@@ -20,12 +26,33 @@ interface Props {
 	model?: string;
 	/** Display name if the model needs disambiguating, e.g. "Hiace (2.8 H300)". */
 	label?: string;
+	/* --- Researched basis line (rule 5 below) ---
+	 * Pass ONLY figures this guide already publishes in its own cost table.
+	 * Never invent a range to fill the slot — omit both and the widget falls
+	 * back to pointing at the table on the page, which is always true. */
+	researchedLight?: string;
+	researchedMajor?: string;
+	/** Sourcing label shown with the figures. Keep it dated. */
+	researchedNote?: string;
 }
 
-const { make = '', model = '', label } = Astro.props;
+const {
+	make = '',
+	model = '',
+	label,
+	researchedLight,
+	researchedMajor,
+	researchedNote = 'average casa prices, 2026',
+} = Astro.props;
 const known = Boolean(make && model);
 const carName = label ?? (known ? `${make} ${model}` : 'car');
 const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
+
+const researched = Boolean(researchedLight || researchedMajor);
+const researchedParts = [
+	researchedLight && `light PMS ${researchedLight}`,
+	researchedMajor && `major PMS ${researchedMajor}`,
+].filter(Boolean);
 ---
 
 {/* Stable id (one widget per page) so the sidebar prompt can jump to it. */}
@@ -39,7 +66,23 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 		</p>
 	</div>
 
-	<p class="pms-stats" data-role="stats" hidden></p>
+	{/* Two lines, deliberately kept apart. The first is OUR research; the second
+	    is what owners actually reported. Collapsing them would let editorial
+	    estimates masquerade as owner data, which is the one thing that would
+	    make this dataset worthless — nobody can cite numbers we made up.
+	    Both render server-side (the owner line ships with an honest empty
+	    state and is replaced in place) so no layout shift is introduced. */}
+	<p class="pms-basis">
+		{researched ? (
+			<><strong>Apex Engine researched estimate:</strong> {researchedParts.join(' · ')} — {researchedNote}.</>
+		) : (
+			<>Our researched estimate for this car is in the cost table above ({researchedNote}).</>
+		)}
+	</p>
+
+	<p class="pms-stats" data-role="stats">
+		<span data-role="stats-text">Owner-reported: no reports yet — be the first.</span>
+	</p>
 
 	<form class="pms-form" data-role="form" novalidate>
 		{/* Honeypot — hidden from humans, catnip for bots. */}
@@ -144,11 +187,15 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 		// --- Readback: show what other owners have reported. ---
 		// Only meaningful on a page about one specific car.
 		(async () => {
-			if (!make || !model) return;
+			// The server-rendered empty state ("no reports yet") is already correct
+			// for every failure path, so anything that goes wrong below simply
+			// leaves it in place rather than blanking the line.
+			const statsText = stats.querySelector('[data-role="stats-text"]');
+			if (!make || !model || !statsText) return;
 			try {
 				const res = await fetch(`/api/pms-stats/?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}`);
 				const data = await res.json();
-				if (!data?.ok || !data.total) return; // nothing yet — stay hidden
+				if (!data?.ok || !data.total) return;
 				const parts: string[] = [];
 				for (const [key, name] of [['light', 'light PMS'], ['major', 'major PMS']] as const) {
 					const g = data.groups?.[key];
@@ -157,8 +204,7 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 					else parts.push(`${name}: ${g.n} report${g.n > 1 ? 's' : ''} so far — too few to publish a figure`);
 				}
 				if (!parts.length) return;
-				stats.innerHTML = `Owner-reported so far: ${parts.join(' · ')}`;
-				stats.hidden = false;
+				statsText.innerHTML = `Owner-reported so far: ${parts.join(' · ')}`;
 			} catch {
 				/* stats are a bonus; never break the article */
 			}
@@ -227,6 +273,12 @@ const uid = `pms-${Math.random().toString(36).slice(2, 9)}`;
 	.pms-sub {
 		margin: 0 0 1rem;
 		font-size: 0.95rem;
+		line-height: 1.5;
+		color: var(--metal-gray, #55595f);
+	}
+	.pms-basis {
+		margin: 0 0 0.5rem;
+		font-size: 0.9rem;
 		line-height: 1.5;
 		color: var(--metal-gray, #55595f);
 	}
