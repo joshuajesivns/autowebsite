@@ -1,0 +1,254 @@
+---
+vertical: "daily-driver"
+title: "Honda BR-V PMS Cost & Schedule Philippines - Apex Engine"
+description: "The BR-V's PMS runs every 10,000 km, not 5,000 — two casa visits a year. Apex Engine breaks down the real schedule, the fuel-pump recall, and the CVT fluid."
+pubDate: "August 28, 2026"
+heroImage: "../../assets/blog-placeholder-1.jpg"
+heroAlt: "The Honda BR-V — Honda Philippines' seven-seat crossover MPV, built on the Brio and City platform with a 1.5-litre i-VTEC engine."
+tags: ["Honda", "Honda BR-V", "PMS", "Maintenance", "MPV", "7-Seater", "Family Car"]
+vehicle:
+  name: "Honda BR-V (S MT / S CVT / V CVT / VX CVT Honda Sensing)"
+  brand: "Honda"
+  model: "BR-V"
+  vehicleModelDate: "2016"
+  bodyType: "MPV"
+  fuelType: "Gasoline"
+  transmission: "CVT, 6-speed manual (S MT only)"
+  drivetrain: "FWD"
+  engines:
+    - name: "1.5L DOHC i-VTEC"
+      engineType: "1,498cc DOHC 16-valve 4-cylinder, naturally aspirated, i-VTEC"
+      power: "121"
+      powerUnit: "PS"
+pms:
+  currency: "PHP"
+  light:
+    name: "Light (Minor) PMS"
+    interval: "Every 10,000 km or 6 months, whichever comes first"
+    costMin: 4500
+    costMax: 7000
+    steps:
+      - "Replace engine oil and oil filter"
+      - "Inspect and clean the air cleaner element"
+      - "Rotate tyres and check pressures"
+      - "Inspect brake pads, discs and rear drums"
+      - "Check coolant, brake fluid and washer levels"
+      - "Inspect drive belt and battery condition"
+      - "Road test and general underchassis inspection"
+  heavy:
+    name: "Heavy (Major) PMS"
+    interval: "The 40,000 km and 80,000 km stops"
+    costMin: 9000
+    costMax: 15000
+    steps:
+      - "Everything in the light PMS"
+      - "Replace air cleaner element"
+      - "Replace spark plugs"
+      - "Replace brake fluid"
+      - "Replace engine coolant"
+      - "Replace dust and pollen filter"
+      - "Service the CVT with Honda HCF-2 fluid (confirm timing with your dealer)"
+      - "Inspect suspension, steering linkage and driveshaft boots"
+faq:
+  - q: "Magkano ang PMS ng Honda BR-V?"
+    a: "A light PMS at the casa runs roughly ₱4,500–7,000, and a heavy PMS at 40,000 or 80,000 km lands closer to ₱9,000–15,000 depending on what gets replaced. Estimates ito, hindi price list — walang published per-model PMS pricing ang Honda PH, at ang PM Cost Calculator nila ay offline pa rin as of August 2026. Ang tanging totoong numero ay ang quote ng dealer mo."
+  - q: "Gaano kadalas ang PMS ng BR-V?"
+    a: "**Every 10,000 km or 6 months, whichever comes first** — ito ang brand-wide cadence ng Honda PH, pareho ng City, Brio at Jazz. Doble ito sa 5,000 km na cycle ng Toyota at Mitsubishi, kaya dalawang casa visit lang kada taon imbes na apat. Hindi ibig sabihin puwedeng i-stretch: puno ng traffic, init at alikabok ang PH driving, at 'severe use' ang turing doon sa manual."
+  - q: "Timing chain ba o belt ang Honda BR-V?"
+    a: "Chain. Ang naturally-aspirated 1.5L L-series i-VTEC ay timing chain-driven, kaya walang nakatakdang mahal na timing-belt replacement sa 100,000 km. Isa ito sa malalaking long-run savings ng BR-V."
+  - q: "May recall ba ang Honda BR-V sa Pilipinas?"
+    a: "Oo — kasama ang BR-V sa fuel pump recall ng Honda PH noong Hunyo 11, 2020 (10,136 units, 2018–2019 model years, Denso impeller na puwedeng mag-crack at mag-deform), at sa 2021 expansion na umabot sa 2018–2021 model years. Applies ito sa first-generation BR-V, hindi sa 2022-onward na bago. Libre ang fuel pump service kit replacement — i-check ang VIN mo sa hondaphil.com/recall o sa dealer."
+  - q: "Anong CVT fluid ang gamit ng BR-V, at kailan pinapalitan?"
+    a: "**Honda HCF-2** — hindi generic CVT fluid, at hindi ito optional. Sa interval, maging tapat tayo: walang Honda PH document na nagsasabi ng eksaktong BR-V CVT-fluid interval sa kilometro. Sa praktika, kasama ito sa heavy PMS sa 40,000 km, at 'yan ang ligtas na assumption sa PH traffic. Kumpirmahin sa dealer laban sa manual ng specific unit mo."
+  - q: "Mahal ba magpa-maintain ng Honda BR-V kumpara sa Xpander o Veloz?"
+    a: "Structurally mas mura ang BR-V sa isang mahalagang paraan: 10,000 km ang interval niya, samantalang 5,000 km ang Toyota at Mitsubishi. Kahit bahagyang mas mataas ang per-visit cost ng Honda, dalawang bisita lang kada taon versus apat — kaya kadalasan ang annual total ay pabor sa BR-V. Gas ito, timing chain, at 1.5L lang — walang diesel o DPF na aalagaan."
+  - q: "Ilang taon ang warranty ng Honda BR-V?"
+    a: "Standard ay **3 years or 100,000 km**, whichever comes first. Mahalagang linawin: ang Honda Secure Plus na 5-year/150,000 km extended warranty na inilunsad noong Mayo 2026 ay para lang sa Prelude at select 2026 CR-V variants — **hindi kasama ang BR-V**. Huwag i-assume na coverage mo 'yan."
+  - q: "Maganda ba ang BR-V bilang family car?"
+    a: "Oo, kung tama ang expectation mo sa third row. Pito ang upuan pero ang totoo, five adults plus two kids ang realistic — 'squeezing two more in the third row if necessary' ang salita mismo ng Top Gear Philippines. Ang 207 mm ground clearance ay legit na baha-friendly, at ang 10,000 km PMS ay malaking tipid sa oras at pera. Ang pinaka-consistent na reklamo: NVH — pumapasok ang road at engine noise sa cabin."
+---
+
+import { Figure, Split, Pullquote } from '../../components/editorial';
+import PmsReport from '../../components/PmsReport.astro';
+import img1 from '../../assets/blog-placeholder-2.jpg';
+import img2 from '../../assets/blog-placeholder-5.jpg';
+
+The **Honda BR-V** is the car Honda Philippines sells when a family walks in needing seven seats and leaves not wanting to pay for a Fortuner. It has been one of Honda's two best-selling nameplates in the country for most of a decade, and the second-generation car passed **10,000 units sold since its November 2022 launch** — a 20% lift over the outgoing model.
+
+But the reason it deserves its own maintenance guide isn't the sales chart. It's this: **the BR-V is serviced every 10,000 km, while the Xpander, Veloz, Avanza and Rush it competes against are serviced every 5,000 km.** That single number changes the ownership maths more than any per-visit price difference does, and almost nobody factors it in at the showroom.
+
+Here's the real schedule, what each stop covers, the recall that affects the older car, and an honest account of what it costs. This is the BR-V companion to our [full guide to PMS meaning, schedule and cost](/blog/car-pms-philippines-guide).
+
+## Key Takeaways
+
+- **PMS every 10,000 km or 6 months** — Honda PH's brand-wide cadence. **Two casa visits a year, not four.** This is the BR-V's biggest structural cost advantage over its Toyota and Mitsubishi rivals.
+- A **light PMS** runs roughly **₱4,500–7,000**; a **heavy PMS** at 40,000 and 80,000 km lands nearer **₱9,000–15,000**. *(Estimates, August 2026 — Honda PH publishes no per-model price list, and their cost calculator is offline.)*
+- **Timing chain, not belt** — no scheduled belt job waiting for you at 100,000 km.
+- **The 2018–2021 cars carry a fuel-pump recall.** Free fix, but check the VIN before buying used.
+- **CVT fluid is Honda HCF-2 specifically** — the one fluid on this car you should never let a shop improvise.
+- **The 5-year Honda Secure Plus warranty does not cover the BR-V.** It's 3 years / 100,000 km here.
+
+<Figure src={img1} width="full" alt="Honda BR-V seven-seat crossover MPV parked, showing its raised ride height and SUV-style body." caption="Seven seats, 207 mm of ground clearance, and a 10,000 km service interval — the BR-V's case is built on running costs more than on driving thrills." credit="Apex Engine" />
+{/* TODO: replace placeholder with a real BR-V photo in src/assets/blog/ */}
+
+## Which Model Years Does This Guide Cover? (2016–2026)
+
+Two generations have been sold here, and they are genuinely different cars for maintenance purposes.
+
+The **first generation** went on sale on **10 December 2016** after showing at that year's Philippine International Motor Show, with a facelift in 2019. It sold in **1.5 S CVT** and **1.5 V Navi CVT** trims. This is the generation the fuel-pump recall applies to.
+
+The **second generation** launched in the Philippines in **November 2022** and is the current car, now with four variants and a manual option back in the range. Both generations use a **1.5-litre naturally-aspirated i-VTEC** driving the front wheels, so the servicing logic — the 10,000 km cycle, the timing chain, the HCF-2 fluid — carries across both. Where they differ materially is safety equipment and the recall history, and both are flagged where they matter below.
+
+## Honda BR-V Quick Specs
+
+| Spec | Detail |
+|---|---|
+| Engine | 1.5L (1,498cc) DOHC 16-valve i-VTEC, 4-cylinder, naturally aspirated |
+| Power | 121 PS (119 hp) @ 6,600 rpm / 145 Nm @ 4,300 rpm |
+| Transmission | CVT; 6-speed manual on the S MT only |
+| Timing | **Chain** (no scheduled belt change) |
+| PMS interval | **Every 10,000 km or 6 months** |
+| Drivetrain | FWD, seven seats |
+| Ground clearance | 207 mm |
+| Fuel tank | 42 litres |
+
+*Dimensions are 4,490 × 1,780 × 1,685 mm, with 244 litres of cargo space behind the third row and 691 litres with it folded. The 2026 range runs **S MT ₱1.09M, S CVT ₱1.15M, V CVT ₱1.295M, and VX CVT with Honda Sensing ₱1.39M** — though be aware that the major listing sites disagree with each other by ₱20,000–25,000 on the CVT variants, and premium paint adds around ₱20,000. Treat any online price as an indication and get the dealer's quote in writing.*
+
+**One spec we're deliberately leaving blank: oil capacity and grade.** The figures circulating online for the BR-V contradict each other — Indian-market sources list 5W-40 and 10W-30, while Honda's general modern specification is 0W-20. Those are not small differences, and we could not confirm which applies to the PH car from a Honda Philippines document. Your owner's manual is the authority here; ask the service adviser to show you the spec rather than trusting a number off a search result. (We've been burned by generic engine-database sites before, and we'd rather print nothing than print the wrong viscosity.)
+
+## The Service Schedule — Why 10,000 km Is the Whole Argument
+
+Honda Philippines requires preventive maintenance **every 6 months or 10,000 kilometres, whichever comes first**. Toyota and Mitsubishi run a 5,000 km cycle. Play that forward over a typical Philippine family's 20,000 km a year:
+
+| | Honda BR-V | Xpander / Veloz / Avanza |
+|---|---|---|
+| Service interval | 10,000 km / 6 months | 5,000 km / 6 months |
+| Casa visits per year (at 20,000 km) | **2** | **4** |
+| Oil changes to 100,000 km | **10** | **20** |
+
+<Pullquote>Even when Honda's per-visit bill is higher, half as many visits usually wins the year.</Pullquote>
+
+Here's how a BR-V's service life actually stacks up:
+
+| Odometer (km) | PMS type | What actually gets done |
+|---|---|---|
+| 1,000 | First check | Initial inspection, bolt torque, fluid levels — no major parts |
+| 10,000 | Light | Engine oil + filter, tyre rotation, brake and fluid inspection |
+| 20,000 | Light | Oil + filter, air cleaner cleaned, brake inspection |
+| 30,000 | Light | Oil + filter, general inspection, dust/pollen filter |
+| **40,000** | **Heavy / major** | Oil + filter, **spark plugs, air cleaner element, brake fluid, coolant**, CVT service |
+| 50,000–70,000 | Light | Oil + filter each stop, rotating inspections |
+| **80,000** | **Heavy / major** | The full 40,000 km list again, plus suspension and driveshaft-boot inspection |
+
+*One honest caveat: this chart reflects Honda PH's standard maintenance pattern for its 10,000 km models rather than a published BR-V-specific document. Honda PH does not put a per-model interval sheet online. If you have the original owner's manual, that beats this table; if you don't, ask a dealer to pull the schedule against your VIN.*
+
+## Light vs. Heavy (Major) PMS
+
+Same distinction as every car on this site, but the spacing is different because the intervals are twice as long.
+
+A **light PMS** is oil, oil filter, and a structured inspection — the visit that keeps the engine alive and catches problems while they're cheap. On a 10,000 km cycle you get two of these a year.
+
+A **heavy or major PMS** is where the consumables get replaced rather than inspected: **spark plugs, air cleaner element, brake fluid, engine coolant, dust and pollen filter**, and the CVT service. These land at **40,000 km and 80,000 km**, and they are the bills worth saving for.
+
+Ang praktikal na payo: budget for the heavy stops in advance. Sa 10,000 km na interval, madaling makalimutan na darating ang 40,000 km — at doble ang bill kaysa sa nakasanayan mong light PMS.
+
+## What It Actually Costs
+
+We have to be straight about the sourcing here, because it's the same wall every PMS guide on this site hits.
+
+**Honda Philippines does not publish a per-model PMS price list.** They used to offer a PM Cost Calculator that gave model-by-model figures — and as of **28 August 2026 it is still down**, showing this notice:
+
+> "The PM Cost Calculator is temporarily unavailable due to maintenance. For your PM Cost inquiries, please contact your nearest Honda Cars dealership."
+
+That tool has now been offline for at least a month. So the honest position is that the only real number is the one your dealer quotes you. As a sanity check, a light PMS on a BR-V should land in the **₱4,500–7,000** range and a heavy PMS at 40,000 or 80,000 km nearer **₱9,000–15,000** — consistent with what the same 1.5-litre engine costs to service in the [Honda City](/blog/honda-city-pms-guide) and [Jazz](/blog/honda-jazz-pms-guide). **Treat that as a range to test a quote against, not a price list.** If a bill comes in well above it, ask for the line items.
+
+Which is exactly why we'd rather publish your number than our estimate:
+
+<PmsReport make="Honda" model="BR-V" />
+
+If you've had yours serviced recently, dropping in the real figure takes about fifteen seconds. We don't publish a median until at least three owners have reported — two numbers is an anecdote wearing a statistic's clothes.
+
+## The CVT Question — and the One Fluid to Get Right
+
+<Split image={img2} side="right" alt="The Honda BR-V's CVT gear selector and centre console." caption="Every BR-V except the base S MT uses a CVT — and it wants Honda HCF-2 fluid specifically.">
+
+Every BR-V except the base S MT uses a CVT, and CVTs have a reputation in the Philippines that's part earned and part folklore.
+
+The earned part: **a CVT is unforgiving about fluid.** It does not have clutch packs and gearsets in the conventional sense; it has a belt and pulleys under enormous clamping pressure, and the fluid is a working component rather than just a lubricant. Honda specifies **HCF-2**, and Honda is explicit that damage caused by a non-equivalent fluid is not covered under warranty.
+
+The folklore part: that a CVT is a grenade waiting to go off. On the BR-V's evidence, no — long-term Philippine road tests report clean reliability records, and there's no documented widespread CVT failure pattern on this model.
+
+</Split>
+
+**On the change interval, we'll say what we actually know.** We could not find a Honda Philippines document stating a specific BR-V CVT-fluid interval in kilometres. In practice it's serviced as part of the heavy PMS at 40,000 km, and for Philippine conditions — stop-start traffic, high ambient heat, low average speeds, exactly the duty cycle that ages CVT fluid fastest — that's the safe assumption. Confirm it against your unit's manual rather than a forum post.
+
+What owners and reviewers *do* consistently report is **CVT drone under hard acceleration**: ask for a sudden overtake and the engine flares and holds a high note while the transmission catches up. Top Gear Philippines described the engine buzzing "like a bandsaw" when pushed at highway speed. This is CVT behaviour, not a defect, and it is not a sign anything is failing.
+
+## Known Issues
+
+### The recall you must check on a used BR-V
+
+**Honda Cars Philippines recalled 10,136 vehicles on 11 June 2020 over a faulty fuel pump**, and the BR-V is on the list. Honda PH's own recall page names "select units of 2018-2019 Accord, BR-V, Mobilio, City, Civic, Jazz, HR-V and CR-V models," describing fuel pumps "containing defective impellers" that can cause the car to be unable to start or to become inoperative. The impeller can crack and deform; the free remedy is a fuel pump service kit replacement, available from July 2020 at Honda dealerships nationwide.
+
+**The campaign was later expanded.** Philippine motoring outlets reported in April 2021 that Honda Cars PH added **10,863 more vehicles**, widening the window to 2018–2021 model years, with **3,094 BR-V units** among them. We're flagging that expansion as *reported by motoring media* rather than manufacturer-confirmed — Honda PH's public recall detail page still describes the 2018–2019 scope, so if your car is a 2020 or 2021 unit, the VIN check matters even more.
+
+**What to do:** run the VIN or chassis number through the checker at hondaphil.com/recall, or ask any dealer to check it against open campaigns. It's free, it takes minutes, and a fuel pump that quits in traffic is not a small problem.
+
+### Verified owner-reported issues
+
+No widespread mechanical failure pattern turns up for the BR-V in Philippine sources — which, as with any well-sorted mainstream car, is itself the finding. What's consistently reported is closer to livability than reliability:
+
+- **NVH is the dominant complaint.** Road noise "permeates well into the cabin," and engine noise leaks in too. Top Gear PH noted this is improved over the first-generation car but still the BR-V's weakest area. If you're cross-shopping and NVH matters to you, drive it on a rough concrete highway, not just around the village.
+- **The third row is a two-child row, not a two-adult row.** Reviewers describe seating "five normal-sized individuals, with the option of squeezing two more in the third row if necessary." Owners report it's tight for adults on long trips. Believe them before you buy for a regular seven-up load.
+- **Occasional trim rattles.** Owners report rattling from the roof area on rough roads, and Top Gear had a **central A/C vent pop out** during their test. Trim quality, not mechanical health — but worth checking on a used unit.
+- **No telescopic steering adjustment.** A real ergonomic limitation if you're tall or short; check your driving position before committing.
+
+For context on the flip side: that same Top Gear test returned **around 10 km/L in mixed driving and 13 km/L fully loaded on the expressway**, and scored the car 7/10.
+
+## Casa vs. Talyer, and the Parts Question
+
+The BR-V is a good candidate for a mixed approach. Its consumables — oil, filters, plugs, brake pads — are shared across Honda's high-volume 1.5-litre range, so a competent independent can source them easily and cheaply.
+
+Where we'd hold the line at the casa: **anything involving the CVT.** HCF-2 is a specific fluid, it's not always stocked by general shops, and "equivalent" is exactly the word Honda's warranty language rules out. Pay the casa premium on that one job.
+
+For the general trade-off — warranty implications, what's safe to move to a trusted mechanic and when — see our [casa versus talyer breakdown](/blog/casa-vs-talyer-philippines).
+
+On warranty specifically, one thing to be clear about because it's easy to misread the news: Honda PH launched **Honda Secure Plus in May 2026, extending coverage from 3 years/100,000 km to 5 years/150,000 km at no extra cost — but only on the Prelude and selected 2026 CR-V variants.** The BR-V is not included. Yours is 3 years / 100,000 km, and keeping the PMS on schedule at an authorised dealer is what protects it.
+
+## How the BR-V Compares to the Other Seven-Seaters
+
+This is the segment where Philippine families actually shop, and the BR-V's rivals all run the shorter service interval:
+
+| Model | PMS interval | Engine | Timing |
+|---|---|---|---|
+| **Honda BR-V** | **10,000 km / 6 mo** | 1.5L gas NA | Chain |
+| [Mitsubishi Xpander](/blog/mitsubishi-xpander-pms-guide) | 5,000 km / 6 mo | 1.5L gas NA | Chain |
+| [Toyota Veloz](/blog/toyota-veloz-pms-guide) | 5,000 km / 6 mo | 1.5L gas NA | Chain |
+| [Toyota Avanza](/blog/toyota-avanza-pms-guide) | 5,000 km / 6 mo | 1.5L gas NA | Chain |
+| [Toyota Rush](/blog/toyota-rush-pms-guide) | 5,000 km / 6 mo | 1.5L gas NA | Chain |
+
+All of them are gasoline, all use timing chains, and none carries diesel's DPF complications — so the maintenance decision between them comes down largely to interval and per-visit price. If you're deciding between the Toyota pair specifically, our [Veloz versus Avanza comparison](/blog/toyota-veloz-vs-avanza) covers that head-to-head in detail.
+
+## Who This Car Is Actually For
+
+The BR-V makes sense for a family that needs seven seats *sometimes* and five seats *always*, drives mostly in the city, and cares more about the total bill over five years than about how the car sounds at 100 km/h.
+
+It makes less sense if you regularly carry seven adults, if cabin quietness is high on your list, or if you want the segment's most engaging drive. Those are real trade-offs and the BR-V doesn't hide them.
+
+If your budget sits below it, the [Brio's running costs](/blog/honda-brio-pms-guide) sit a class down on the same 10,000 km schedule. If you don't need the third row at all, the [City](/blog/honda-city-pms-guide) gives you the same engine family and interval in a sedan.
+
+## The Bottom Line
+
+The BR-V's case is quieter than its rivals' marketing: **seven seats, 207 mm of ground clearance, a timing chain, a naturally-aspirated engine with nothing exotic to fail, and a service interval that halves your casa visits.** That last item is worth more over five years than most of the features people actually compare at the showroom.
+
+What to hold on to:
+
+1. **Two services a year, not four.** At 20,000 km annually you'll visit the casa twice — factor that into any cross-shop against an Xpander or Veloz.
+2. **Check the VIN if it's a 2018–2021 unit.** The fuel-pump recall is free and the failure mode is the car not starting.
+3. **HCF-2 or nothing on the CVT.** This is the one job not to hand to whoever's cheapest.
+4. **Don't assume the 5-year warranty.** That's Prelude and CR-V territory; the BR-V is 3 years / 100,000 km.
+5. **Drive it on a bad road before you buy.** NVH is the consistent complaint, and it's the kind you only notice after the honeymoon.
+
+At sa huli, ang BR-V ay hindi ang pinaka-exciting na sasakyan sa segment niya — pero hindi rin naman siya nagpapanggap. **Praktikal siya, matipid alagaan, at may third row kapag kailangan.** Para sa maraming pamilyang Pilipino, tama lang ang kombinasyong 'yan.
+
+For how this sits against the wider market, our [rundown of PMS meaning, schedules and pricing across the range](/blog/car-pms-philippines-guide) puts every model's service costs side by side.
