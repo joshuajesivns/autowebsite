@@ -31,10 +31,21 @@ const { data: pendingReports, error } = await supabase
 		{pendingReports?.map((r) => (
 			<div class="moderation-item">
 				<div class="report-card">
-					<h3>{r.make} {r.model} ({r.model_year}{r.trim ? `, ${r.trim}` : ''})</h3>
+					{/* model_year and mileage_km became optional in the Aug 2026 form rebuild.
+    A bare Number(null) printed a confident "0 km" on reports where the
+    owner simply hadn't said — the one thing a moderation view must not do. */}
+<h3>
+	{r.make} {r.model}
+	{(r.model_year || r.trim) && ` (${[r.model_year, r.trim].filter(Boolean).join(', ')})`}
+</h3>
 					<ul>
 						<li><strong>Service:</strong> {r.service_type}</li>
-						<li><strong>Mileage:</strong> {Number(r.mileage_km).toLocaleString()} km</li>
+						<li>
+	<strong>Mileage:</strong>{' '}
+	{r.mileage_km == null
+		? <span class="unstated">not stated</span>
+		: `${Number(r.mileage_km).toLocaleString()} km`}
+</li>
 						<li><strong>Paid:</strong> ₱{Number(r.amount_php).toLocaleString()}</li>
 						<li><strong>Where:</strong> {r.service_location}</li>
 						{r.region && <li><strong>Region:</strong> {r.region}</li>}
@@ -114,5 +125,9 @@ const { data: pendingReports, error } = await supabase
 	.error-message {
 		color: var(--red-mica-dark, #B91C1C);
 		font-weight: 700;
+	}
+	.unstated {
+		color: var(--metal-gray);
+		font-style: italic;
 	}
 </style>

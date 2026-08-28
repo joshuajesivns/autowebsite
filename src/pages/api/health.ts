@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getPublicSupabase } from '../../lib/supabase';
+import { getAdminSupabase, getPublicSupabase } from '../../lib/supabase';
 
 export const prerender = false;
 
@@ -33,8 +33,38 @@ export const GET: APIRoute = async () => {
 		// result rather than an error, so a misconfigured table looks perfectly
 		// healthy. Surfacing the count makes "connected but cannot read" — which
 		// silently disables the stats readback — visible at a glance.
+		const visibleApproved = count ?? 0;
+
+		// ...but on its own that count is still ambiguous: 0 could mean "RLS is
+		// blocking us" or "nobody has contributed yet", and those need opposite
+		// responses. It read 0 for weeks and was taken to mean the second while
+		// it actually meant the first. So ask again with the service key, which
+		// bypasses RLS, and report both. When they disagree, the policy is the
+		// problem and `readable` says so outright.
+		let totalApproved: number | null = null;
+		try {
+			const { count: adminCount, error: adminError } = await getAdminSupabase()
+				.from('pms_reports')
+				.select('id', { count: 'exact', head: true })
+				.eq('status', 'approved');
+			if (!adminError) totalApproved = adminCount ?? 0;
+		} catch {
+			// Diagnostics must never be the reason a health check fails.
+		}
+
+		const rlsBlocked = totalApproved !== null && totalApproved > visibleApproved;
+
 		return json(
-			{ ok: true, datastore: 'up', visibleApproved: count ?? 0, ms: Date.now() - started },
+			{
+				ok: true,
+				datastore: 'up',
+				visibleApproved,
+				totalApproved,
+				readable: rlsBlocked
+					? `BLOCKED: ${totalApproved} approved row(s) exist but the public role can read ${visibleApproved}. Add a SELECT policy — see /admin/pms-seed/.`
+					: 'ok',
+				ms: Date.now() - started,
+			},
 			200,
 		);
 	} catch (err) {

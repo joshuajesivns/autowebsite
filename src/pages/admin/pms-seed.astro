@@ -28,7 +28,29 @@ for (const r of approved) {
 }
 const modelRows = [...byModel.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 
-const MIGRATION_SQL = `alter table pms_reports
+// Three separate defects, all fixed by one paste. Ordered by how much damage
+// each is doing right now, not by how interesting it is.
+const MIGRATION_SQL = `-- 1. THE WIDGET-KILLER. Row Level Security has no SELECT policy for the
+--    public role, so /api/pms-stats reads zero rows even when approved
+--    reports exist, and every widget on the site shows its empty state.
+--    RLS returns an empty result rather than an error, which is why this
+--    looked for weeks like "nobody has contributed yet".
+drop policy if exists "anon reads approved pms reports" on pms_reports;
+create policy "anon reads approved pms reports"
+  on pms_reports for select to anon
+  using (status = 'approved');
+
+-- 2. THE FORM-KILLER. The API and this seed tool both treat model_year and
+--    mileage_km as optional (they sit behind "Add more detail", and every
+--    extra required field roughly halves completion) — but the columns are
+--    still NOT NULL. Any submission that skips either one dies with a 500
+--    and the reader sees "Could not save your report."
+alter table pms_reports alter column model_year drop not null;
+alter table pms_reports alter column mileage_km  drop not null;
+
+-- 3. Provenance, so owner reports and reference prices can share a table
+--    without the median quietly absorbing figures nobody actually paid.
+alter table pms_reports
   add column if not exists source text not null default 'form';
 
 create index if not exists pms_reports_source_idx on pms_reports (source);`;
@@ -71,13 +93,37 @@ Toyota\tVios\t2018\tlight\t55000\t2100\ttalyer\tCavite\t2026-07-11\tsynthetic, o
 		</p>
 	</div>
 
-	<details class="migration">
-		<summary>One-time setup: add the <code>source</code> column</summary>
+	<details class="migration" open>
+		<summary>⚠️ Required setup — run this before seeding anything</summary>
 		<p>
-			Run this once in the Supabase SQL editor. Existing rows default to <code>form</code>, which is
-			correct — everything already in the table came through the public form.
+			Run this once in the Supabase SQL editor. It fixes <strong>three separate faults</strong>, two
+			of which are actively breaking the pipeline right now:
 		</p>
+		<ol>
+			<li>
+				<strong>Readers can't see approved data.</strong> RLS has no public SELECT policy, so the
+				stats endpoint reads zero rows no matter how much you seed. Every widget on the site is
+				showing its empty state for this reason — not because the table is empty.
+			</li>
+			<li>
+				<strong>Public submissions fail if the reader skips a field.</strong>
+				<code>model_year</code> and <code>mileage_km</code> are optional in the form but
+				<code>NOT NULL</code> in the table, so those submissions return a 500. This tool hits the
+				same wall on any row without a year or mileage.
+			</li>
+			<li>
+				<strong>No <code>source</code> column</strong>, so bulk inserts are rejected outright.
+				Existing rows default to <code>form</code>, which is correct — everything already in the
+				table arrived through the public form.
+			</li>
+		</ol>
 		<pre>{MIGRATION_SQL}</pre>
+		<p class="verify">
+			After running it, check <a href="/api/health/"><code>/api/health/</code></a>: it should report a
+			non-zero <code>visibleApproved</code> matching <code>totalApproved</code>. If
+			<code>visibleApproved</code> is 0 while <code>totalApproved</code> isn't, the RLS policy didn't
+			take.
+		</p>
 	</details>
 
 	<h2>Current approved data</h2>
