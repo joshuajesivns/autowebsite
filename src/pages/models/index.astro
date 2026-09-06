@@ -4,22 +4,74 @@ import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { getCollection } from 'astro:content';
 
-const models = await getCollection('models');
+// The catalog is a VIEW onto the blog collection, not a second content store.
+// It used to be backed by its own `models` collection of ~200-word stubs, which
+// earned zero clicks and cannibalised the full guides (the Mirage G4 stub sat at
+// position 42 while mitsubishi-mirage-pms-guide ranked 8). Grouping the real
+// guides by make gives the same browse-by-car entry point with nothing thin behind it.
 
-// Group models by make (e.g. Toyota, Nissan)
-const groupedModels = models.reduce((acc, entry) => {
-	const make = entry.data.make;
-	(acc[make] ??= []).push(entry);
-	return acc;
-}, {} as Record<string, typeof models>);
+// Model keywords per make: guides are matched on slug + title, so multi-make
+// comparisons (e.g. hilux-vs-ranger-vs-dmax-vs-navara) list under every make
+// they cover instead of falling through to the general bucket.
+const MAKES: Record<string, string[]> = {
+	Toyota: ['toyota', 'hilux', 'vios', 'innova', 'zenix', 'fortuner', 'avanza', 'veloz', 'raize', 'rush', 'wigo', 'tamaraw', 'hiace', 'camry', 'celica', 'corolla', 'ativ', 'yaris'],
+	Honda: ['honda', 'city', 'jazz', 'brio', 'civic', 'br-v', 'hr-v'],
+	Mitsubishi: ['mitsubishi', 'xpander', 'mirage', 'montero', 'triton', 'xforce', 'destinator', 'l300'],
+	Ford: ['ford', 'ranger', 'everest', 'territory'],
+	Isuzu: ['isuzu', 'd-max', 'dmax', 'mu-x'],
+	Nissan: ['nissan', 'navara', 'almera'],
+	Suzuki: ['suzuki', 'dzire', 's-presso'],
+	Hyundai: ['hyundai', 'accent'],
+	BYD: ['byd', 'seagull', 'seal'],
+};
 
-const makes = Object.keys(groupedModels).sort();
+// Short shelf label per reader-intent vertical (matches the blog schema's `vertical`).
+const VERTICAL_LABEL: Record<string, string> = {
+	'daily-driver': 'PMS & Ownership',
+	jdm: "JDM Buyer's Guide",
+	ev: 'EV Ownership',
+	news: 'News & Explainer',
+};
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+const cleanTitle = (title: string) => title.replace(/\s*[-–]\s*Apex Engine\s*$/i, '').trim();
+
+const matchesMake = (haystack: string, keywords: string[]) =>
+	keywords.some((kw) => new RegExp(`(^|[^a-z0-9])${kw}([^a-z0-9]|$)`, 'i').test(haystack));
+
+const grouped: Record<string, typeof posts> = {};
+const general: typeof posts = [];
+
+for (const post of posts) {
+	const haystack = `${post.id} ${post.data.title}`.toLowerCase();
+	let matched = false;
+	for (const [make, keywords] of Object.entries(MAKES)) {
+		if (matchesMake(haystack, keywords)) {
+			(grouped[make] ??= []).push(post);
+			matched = true;
+		}
+	}
+	if (!matched) general.push(post);
+}
+
+// Busiest makes first — Toyota is the deepest cluster and the most common entry point.
+const makes = Object.keys(grouped).sort(
+	(a, b) => grouped[b].length - grouped[a].length || a.localeCompare(b),
+);
+
+const guideCount = posts.length;
 ---
 
 <!doctype html>
 <html lang="en-PH">
 	<head>
-		<BaseHead title="Verified Car Specs and Buying Guides for PH - Apex Engine" description="Apex Engine documents verified specs, real pricing, and technical buying guides for major car models sold in the Philippines. Find your next verified ride." />
+		<BaseHead
+			title="Car Maintenance Guides by Brand Philippines - Apex Engine"
+			description={`Browse all ${guideCount} Apex Engine ownership guides by car brand — PMS schedules, real service costs, and buyer's checks for the models Filipinos actually drive.`}
+		/>
 	</head>
 	<body>
 		<Header />
@@ -27,19 +79,27 @@ const makes = Object.keys(groupedModels).sort();
 			<section class="catalog-section">
 				<div class="header-block">
 					<h1>Model Catalog</h1>
-					<p class="subtitle">Complete technical specification libraries, real-world issues, and buying reviews for enthusiast and commuter machines.</p>
+					<p class="subtitle">
+						Every guide we've published, grouped by brand — PMS schedules, real service
+						costs, known issues, and used-buying checks for {guideCount} cars and guides.
+					</p>
 				</div>
 
 				<div class="makes-grid">
 					{makes.map((make) => (
 						<div class="make-card">
-							<h2>{make}</h2>
+							<h2>{make} <span class="count">{grouped[make].length}</span></h2>
 							<ul class="model-links">
-								{groupedModels[make].map((entry) => (
+								{grouped[make].map((post) => (
 									<li>
-										<a href={`/models/${entry.id}/`} class="model-link">
-											<span class="model-name">{entry.data.model}</span>
-											<span class="meta">{entry.data.yearsProduced} · {entry.data.bodyType}</span>
+										<a href={`/blog/${post.id}/`} class="model-link">
+											<span class="model-name">{cleanTitle(post.data.title)}</span>
+											<span class="meta">
+												{post.data.vehicle?.vehicleModelDate
+													? `${post.data.vehicle.vehicleModelDate.replace('/', '–')} · `
+													: ''}
+												{VERTICAL_LABEL[post.data.vertical] ?? 'Guide'}
+											</span>
 										</a>
 									</li>
 								))}
@@ -47,6 +107,22 @@ const makes = Object.keys(groupedModels).sort();
 						</div>
 					))}
 				</div>
+
+				{general.length > 0 && (
+					<div class="general-block">
+						<h2 class="general-heading">Cross-Brand Guides & Explainers</h2>
+						<ul class="model-links general-links">
+							{general.map((post) => (
+								<li>
+									<a href={`/blog/${post.id}/`} class="model-link">
+										<span class="model-name">{cleanTitle(post.data.title)}</span>
+										<span class="meta">{VERTICAL_LABEL[post.data.vertical] ?? 'Guide'}</span>
+									</a>
+								</li>
+							))}
+						</ul>
+					</div>
+				)}
 			</section>
 		</main>
 		<Footer />
@@ -104,6 +180,16 @@ const makes = Object.keys(groupedModels).sort();
 		border-bottom: 2px solid var(--black-mica);
 		padding-bottom: 0.3em;
 		margin-bottom: 1em;
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.5em;
+	}
+	.count {
+		font-size: 0.8rem;
+		font-family: monospace;
+		color: var(--metal-gray);
+		font-weight: 500;
 	}
 
 	.model-links {
@@ -125,7 +211,7 @@ const makes = Object.keys(groupedModels).sort();
 	}
 	.model-link:hover {
 		border-color: var(--accent-color);
-		box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
 	}
 	.model-link:hover .model-name {
 		color: var(--accent-color);
@@ -134,13 +220,35 @@ const makes = Object.keys(groupedModels).sort();
 		font-weight: 700;
 		text-transform: uppercase;
 		font-size: 0.95rem;
+		line-height: 1.3;
 		transition: color 0.15s;
 	}
 	.meta {
 		font-size: 0.75rem;
 		color: var(--metal-gray);
-		margin-top: 0.25em;
+		margin-top: 0.35em;
 		text-transform: uppercase;
 		letter-spacing: 0.03em;
+	}
+
+	.general-block {
+		margin-top: 3em;
+		border-top: 1px solid var(--line);
+		padding-top: 2.5em;
+	}
+	.general-heading {
+		text-transform: uppercase;
+		font-size: 1.5rem;
+		margin-bottom: 1.25em;
+	}
+	@media (min-width: 768px) {
+		.general-links {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (min-width: 1024px) {
+		.general-links {
+			grid-template-columns: repeat(3, 1fr);
+		}
 	}
 </style>

@@ -5,5 +5,57 @@
 			"path": "/api/health/",
 			"schedule": "0 3 * * *"
 		}
+	],
+	"redirects": [
+		{
+			"source": "/models/toyota-vios/",
+			"destination": "/blog/toyota-vios-pms-guide/",
+			"permanent": true
+		},
+		{
+			"source": "/models/toyota-vios",
+			"destination": "/blog/toyota-vios-pms-guide/",
+			"permanent": true
+		},
+		{
+			"source": "/models/toyota-innova/",
+			"destination": "/blog/toyota-innova-pms-guide/",
+			"permanent": true
+		},
+		{
+			"source": "/models/toyota-innova",
+			"destination": "/blog/toyota-innova-pms-guide/",
+			"permanent": true
+		},
+		{
+			"source": "/models/mitsubishi-mirage-g4/",
+			"destination": "/blog/mitsubishi-mirage-pms-guide/",
+			"permanent": true
+		},
+		{
+			"source": "/models/mitsubishi-mirage-g4",
+			"destination": "/blog/mitsubishi-mirage-pms-guide/",
+			"permanent": true
+		},
+		{
+			"source": "/models/toyota-ae86-trueno/",
+			"destination": "/models/",
+			"permanent": true
+		},
+		{
+			"source": "/models/toyota-ae86-trueno",
+			"destination": "/models/",
+			"permanent": true
+		},
+		{
+			"source": "/models/nissan-skyline-gt-r-r34/",
+			"destination": "/models/",
+			"permanent": true
+		},
+		{
+			"source": "/models/nissan-skyline-gt-r-r34",
+			"destination": "/models/",
+			"permanent": true
+		}
 	]
 }

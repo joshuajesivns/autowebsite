@@ -95,28 +95,4 @@ const blog = defineCollection({
 		}),
 });
 
-const models = defineCollection({
-	// Load Markdown and MDX files in the `src/content/models/` directory.
-	loader: glob({ base: './src/content/models', pattern: '**/*.{md,mdx}' }),
-	schema: ({ image }) =>
-		z.object({
-			make: z.string(),
-			model: z.string(),
-			yearsProduced: z.string(),
-			engine: z.string(),
-			transmission: z.string(),
-			fuel: z.string(),
-			seats: z.number(),
-			bodyType: z.string(),
-			averageMarketPrice: z.string(),
-			heroImage: z.optional(image()),
-			category: z.string().optional(), // e.g. sports, kei-truck, sedan, van
-			// Optional SEO overrides — falls back to a generic template in
-			// models/[slug].astro when omitted. Follow the meta title/description
-			// formula in CONTENT_STYLE_GUIDE.md when setting these.
-			metaTitle: z.string().optional(),
-			metaDescription: z.string().optional(),
-		}),
-});
-
-export const collections = { blog, models };
+export const collections = { blog };

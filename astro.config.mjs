@@ -17,6 +17,12 @@ export default defineConfig({
 	adapter: vercel(),
 	// Keep admin/internal routes out of the sitemap (also Disallowed in public/robots.txt).
 	integrations: [mdx(), sitemap({ filter: (page) => !page.includes('/admin/') })],
+	// NOTE: the five ~200-word /models/* stubs were removed (zero clicks ever; they
+	// cannibalised the guides that outrank them). Their 301s live in vercel.json, NOT
+	// here: Astro normalises redirect keys to the slash-less form, which never matches
+	// the trailing-slash URLs this site actually publishes. Recover the stub source from
+	// git if the AE86 / R34 guides ever get written for real.
+
 	fonts: [
 		{
 			provider: fontProviders.local(),
