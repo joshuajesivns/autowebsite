@@ -164,7 +164,15 @@ function loadPrevSnapshot(currentDate) {
 function saveSnapshot(date, pages) {
   fs.mkdirSync(path.join(HERE, 'output'), { recursive: true });
   const entry = { date, pages: pages.map((p) => ({ p: p.p, clicks: p.clicks, impressions: p.impressions, ctr: p.ctr, position: p.position })) };
-  fs.appendFileSync(histFile, JSON.stringify(entry) + '\n');
+  // Rewrite rather than append, so re-running the same window replaces its entry
+  // instead of adding a duplicate date. A duplicate date makes a naive
+  // "last two runs" delta read as zero change.
+  const kept = fs.existsSync(histFile)
+    ? fs.readFileSync(histFile, 'utf8').trim().split('\n').filter(Boolean).filter((l) => {
+        try { return JSON.parse(l).date !== date; } catch { return false; }
+      })
+    : [];
+  fs.writeFileSync(histFile, [...kept, JSON.stringify(entry)].join('\n') + '\n');
 }
 
 // ── AI summary (Gemini; swap-in point for Claude later) ────────────────────────
@@ -238,14 +246,52 @@ async function main() {
     console.warn('! GA4 fetch failed (continuing with GSC only):', e.errors?.[0]?.message || e.message);
   }
 
-  // Join GSC pages with GA4
-  let pages = gscPages.map((r) => {
-    const url = r.keys[0];
-    const p = pathOf(url);
+  // Drop #fragment rows from page metrics, and record them separately.
+  //
+  // GSC reports jump-to-section anchors as their own URLs, but those impressions
+  // are ALREADY counted on the parent page row -- they are a double count, not
+  // extra reach. Verified two ways on the 2026-09-04..2026-10-01 window:
+  //   * query 'heavy pms car price philippines' totalled 5426 impressions, and
+  //     the parent page row alone was exactly 5426, with its 7 fragment rows
+  //     adding 61 more on top.
+  //   * summing page rows WITHOUT fragments gives 47,720 impressions against a
+  //     date-dimension truth of 46,768 (+2%, the normal page-dimension spread);
+  //     summing WITH fragments gives 65,109 (+39%).
+  // Keeping them also broke index coverage (URL Inspection can never report a
+  // fragment as indexed) and wasted PageSpeed quota re-measuring the same page.
+  // Fragment impressions are still worth seeing as a deep-linking/visibility
+  // signal, so they are tracked per page rather than discarded silently.
+  const mergedPages = new Map();
+  let fragmentRows = 0, fragmentImpressions = 0, fragmentClicks = 0;
+  for (const r of gscPages) {
+    const raw = String(r.keys[0]);
+    const url = raw.split('#')[0];
     const impressions = r.impressions || 0;
     const clicks = r.clicks || 0;
-    const ctr = r.ctr || 0;
-    const position = r.position || 0;
+    const m = mergedPages.get(url) || { url, impressions: 0, clicks: 0, posWeighted: 0, fragImpressions: 0, fragClicks: 0, fragRows: 0 };
+    if (raw.includes('#')) {
+      // Double count: record for reporting, exclude from the page's metrics.
+      fragmentRows++; fragmentImpressions += impressions; fragmentClicks += clicks;
+      m.fragImpressions += impressions; m.fragClicks += clicks; m.fragRows++;
+    } else {
+      m.impressions += impressions;
+      m.clicks += clicks;
+      m.posWeighted += (r.position || 0) * impressions;
+    }
+    mergedPages.set(url, m);
+  }
+  if (fragmentRows) {
+    console.log(`Dropped ${fragmentRows} #fragment rows (${fragmentImpressions} duplicate impr, ${fragmentClicks} clicks) covering ${mergedPages.size} pages.\n`);
+  }
+
+  // Join GSC pages with GA4
+  let pages = [...mergedPages.values()].map((r) => {
+    const url = r.url;
+    const p = pathOf(url);
+    const impressions = r.impressions;
+    const clicks = r.clicks;
+    const ctr = impressions ? clicks / impressions : 0;
+    const position = impressions ? r.posWeighted / impressions : 0;
     const g = ga4.get(p) || {};
     const potentialClicks = position > 0 && position <= 20 ? Math.round(impressions * Math.max(0, expectedCtr(position) - ctr)) : 0;
     const tags = [];
@@ -253,7 +299,7 @@ async function main() {
     if (impressions >= 50 && ctr < expectedCtr(position) * 0.5) tags.push('low-CTR');
     if ((g.engagementRate || 0) >= 0.5 && impressions < 100) tags.push('great-content-low-reach');
     if (position > 0 && position <= 4 && ctr >= expectedCtr(position) * 0.7) tags.push('winning');
-    return { url, p, impressions, clicks, ctr, position, potentialClicks, tags, ...g };
+    return { url, p, impressions, clicks, ctr, position, potentialClicks, tags, fragImpressions: r.fragImpressions, fragClicks: r.fragClicks, ...g };
   });
   pages.sort((a, b) => b.potentialClicks - a.potentialClicks || b.impressions - a.impressions);
 
@@ -290,6 +336,7 @@ async function main() {
   }
 
   // URL Inspection (index coverage) on top pages
+  let notIndexedPages = [];
   if (config.indexCheck?.enabled) {
     const toCheck = pages.slice(0, config.indexCheck.maxUrls || 30);
     console.log(`Index coverage (URL Inspection) on ${toCheck.length} pages...`);
@@ -301,8 +348,13 @@ async function main() {
       }
       await sleep(300);
     }
-    const notIndexed = toCheck.filter((p) => p.index && !/^✓/.test(indexLabel(p.index).t)).length;
-    console.log(`  ${toCheck.length - notIndexed}/${toCheck.length} indexed\n`);
+    const notIndexed = toCheck.filter((p) => p.index && !/^✓/.test(indexLabel(p.index).t));
+    console.log(`  ${toCheck.length - notIndexed.length}/${toCheck.length} indexed`);
+    for (const p of notIndexed) {
+      console.log(`  ✗ ${p.p} — ${p.index.coverage || p.index.verdict || 'unknown'} (last crawl: ${p.index.lastCrawl || 'never'})`);
+    }
+    console.log('');
+    notIndexedPages = notIndexed;
   }
 
   // Save this run to history (for next run's trends)
